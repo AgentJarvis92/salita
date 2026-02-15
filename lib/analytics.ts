@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase/client'
+import { supabase } from '@/lib/supabase'
 
 /**
  * Analytics event names (matches analytics_events.event_name enum)
@@ -23,7 +23,6 @@ export async function trackEvent(
   metadata?: Record<string, any>
 ): Promise<void> {
   try {
-    const supabase = createClient()
     const { data: { user } } = await supabase.auth.getUser()
 
     if (!user) {
@@ -57,8 +56,6 @@ export async function getUserEvents(
   limit: number = 100
 ): Promise<any[]> {
   try {
-    const supabase = createClient()
-    
     let targetUserId = userId
     if (!targetUserId) {
       const { data: { user } } = await supabase.auth.getUser()
@@ -95,8 +92,6 @@ export async function hasUserCompletedEvent(
   userId?: string
 ): Promise<boolean> {
   try {
-    const supabase = createClient()
-    
     let targetUserId = userId
     if (!targetUserId) {
       const { data: { user } } = await supabase.auth.getUser()
