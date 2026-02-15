@@ -1,8 +1,9 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useRouter } from 'next/navigation'
+import { useAuth } from '@/lib/auth-context'
 
 export default function LoginPage() {
   const [email, setEmail] = useState('')
@@ -10,6 +11,13 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const router = useRouter()
+  const { user } = useAuth()
+
+  useEffect(() => {
+    if (user) {
+      router.push('/')
+    }
+  }, [user, router])
 
   const handleEmailLogin = async (e: React.FormEvent) => {
     e.preventDefault()
