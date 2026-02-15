@@ -10,6 +10,7 @@ export default function LoginPage() {
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [isSignup, setIsSignup] = useState(false)
   const router = useRouter()
   const { user } = useAuth()
 
@@ -25,6 +26,24 @@ export default function LoginPage() {
     setError('')
 
     const { error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    })
+
+    if (error) {
+      setError(error.message)
+      setLoading(false)
+    } else {
+      router.push('/')
+    }
+  }
+
+  const handleEmailSignup = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setLoading(true)
+    setError('')
+
+    const { error } = await supabase.auth.signUp({
       email,
       password,
     })
@@ -93,7 +112,7 @@ export default function LoginPage() {
           </div>
         </div>
 
-        <form onSubmit={handleEmailLogin} className="space-y-4">
+        <form onSubmit={isSignup ? handleEmailSignup : handleEmailLogin} className="space-y-4">
           <div>
             <label htmlFor="email" className="block text-sm font-medium text-zinc-700 dark:text-zinc-300">
               Email
@@ -127,8 +146,21 @@ export default function LoginPage() {
             disabled={loading}
             className="w-full px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
           >
-            {loading ? 'Loading...' : 'Sign in'}
+            {loading ? 'Loading...' : isSignup ? 'Sign up' : 'Sign in'}
           </button>
+
+          <div className="text-center text-sm">
+            <button
+              type="button"
+              onClick={() => {
+                setIsSignup(!isSignup)
+                setError('')
+              }}
+              className="text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
+            >
+              {isSignup ? 'Already have an account? Sign in' : "Don't have an account? Sign up"}
+            </button>
+          </div>
         </form>
       </div>
     </div>
