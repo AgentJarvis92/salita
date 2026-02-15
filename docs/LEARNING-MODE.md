@@ -80,6 +80,8 @@ Use Learning Mode AFTER features exist and feel weak.
 
 6. **Apply to product** (only if improvement is clear)
 
+7. **Add learnings to shared knowledge library** (`~/agent-training-ground/shared-knowledge/`)
+
 ---
 
 ## DO NOT USE AI UNIVERSITY FOR
