@@ -462,10 +462,24 @@ A cohesive mobile UI that feels part of the same app.
 1. **Kevin:** Paste prompt into Variant.com
 2. **Variant:** Generate design
 3. **Kevin:** Review, iterate if needed
-4. **Kevin:** Share Variant link with Jarvis
-5. **Jarvis:** Analyze design, implement in code
-6. **Jarvis:** Match design system exactly
+4. **Kevin:** Approve design
+5. **Kevin:** Share Variant link with Jarvis
+6. **Jarvis:** Analyze design, implement in code
+7. **Jarvis:** Match design system exactly
 
 ---
 
-**Next:** Provide Prompt 2 to complete the set.
+## ⚠️ DESIGN IMPLEMENTATION RULE (MANDATORY)
+
+**Once designs are approved:**
+
+> **"This is the approved design. Do not reinterpret or simplify. Match layout, spacing, and structure as closely as possible. If anything is unclear, ask before building."**
+
+**Enforcement:** MANDATORY  
+**Added:** 2026-02-15
+
+This rule applies to ALL UI implementation from Variant designs.
+
+---
+
+**Status:** All 3 prompts complete. Awaiting Variant design links.

@@ -63,10 +63,22 @@
 
 ---
 
+## ⚠️ DESIGN IMPLEMENTATION RULE (MANDATORY)
+
+**Once Variant designs are approved:**
+
+> **"This is the approved design. Do not reinterpret or simplify. Match layout, spacing, and structure as closely as possible. If anything is unclear, ask before building."**
+
+**Enforcement:** MANDATORY  
+**Added:** 2026-02-15
+
+---
+
 ## IMPLEMENTATION RULES
 
 ### **MUST:**
-- ✅ Match Variant design exactly
+- ✅ Match Variant design exactly (no reinterpretation)
+- ✅ Match layout, spacing, and structure precisely
 - ✅ Build mobile-first (375-430px iPhone)
 - ✅ Use clean, modern styling
 - ✅ Maintain consistent spacing
@@ -74,8 +86,9 @@
 
 ### **MUST NOT:**
 - ❌ Design UI independently
+- ❌ Reinterpret or simplify approved designs
 - ❌ Guess layouts or spacing
-- ❌ Simplify designs without approval
+- ❌ Modify designs without approval
 - ❌ Modify Phase 2 backend (database/analytics)
 - ❌ Proceed without Variant design link
 
