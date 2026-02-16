@@ -56,11 +56,12 @@ export default function DashboardPage() {
           >
             {/* Background Image - positioned to show eyes clearly */}
             <div 
-              className="absolute inset-0 bg-cover"
+              className="absolute inset-0"
               style={{
                 backgroundImage: 'url(/avatars/ate-maria-portrait.webp)',
                 backgroundPosition: '55% 40%',
-                backgroundSize: '65%'
+                backgroundSize: 'contain',
+                backgroundRepeat: 'no-repeat'
               }}
             />
             
@@ -93,11 +94,12 @@ export default function DashboardPage() {
           >
             {/* Background Image - positioned to show eyes clearly */}
             <div 
-              className="absolute inset-0 bg-cover"
+              className="absolute inset-0"
               style={{
                 backgroundImage: 'url(/avatars/kuya-josh-portrait.webp)',
                 backgroundPosition: '60% 40%',
-                backgroundSize: '65%'
+                backgroundSize: 'contain',
+                backgroundRepeat: 'no-repeat'
               }}
             />
             
