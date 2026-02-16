@@ -7,7 +7,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useState, useRef } from 'react';
 import MicButton from '@/components/voice/MicButton';
 import VoiceToggle from '@/components/voice/VoiceToggle';
-import PlaybackButton from '@/components/voice/PlaybackButton';
+import ChatBubble from '@/components/chat/ChatBubble';
 import { synthesizeAndPlay } from '@/lib/speech/tts';
 
 interface AIResponse {
@@ -227,58 +227,13 @@ function ChatPageContent() {
           )}
 
           {messages.map((msg) => (
-            <div
+            <ChatBubble
               key={msg.id}
-              className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
-            >
-              {msg.role === 'user' ? (
-                <div className="max-w-[85%] rounded-2xl px-4 py-3 bg-[#D4AF37] text-[#0a0a0f]">
-                  <p className="text-[15px] leading-relaxed">{msg.content}</p>
-                </div>
-              ) : (
-                <div className="max-w-[85%] space-y-3">
-                  {/* AI Response Card */}
-                  <div 
-                    className="rounded-2xl px-4 py-3 text-white border border-white/5 backdrop-blur-md"
-                    style={{ backgroundColor: 'rgba(30, 58, 95, 0.25)' }}
-                  >
-                    <div className="flex items-start gap-2">
-                      <p className="text-[16px] leading-relaxed flex-1">
-                        {msg.aiResponse?.tagalog}
-                      </p>
-                      {/* Playback button */}
-                      {msg.aiResponse?.tagalog && (
-                        <PlaybackButton text={msg.aiResponse.tagalog} className="mt-0.5" />
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Hint Box */}
-                  {msg.aiResponse?.hint && 
-                   typeof msg.aiResponse.hint === 'string' && 
-                   msg.aiResponse.hint.trim() !== '' && 
-                   msg.aiResponse.hint !== 'None' && (
-                    <div 
-                      className="rounded-2xl px-4 py-3 border border-white/10 backdrop-blur-md"
-                      style={{ backgroundColor: 'rgba(30, 58, 95, 0.15)' }}
-                    >
-                      <p className="text-[13px] leading-relaxed text-white/90">
-                        {msg.aiResponse.hint}
-                      </p>
-                    </div>
-                  )}
-
-                  {/* Correction Box */}
-                  {msg.aiResponse?.correction && msg.aiResponse.correction !== 'None' && (
-                    <div className="rounded-2xl px-4 py-3 bg-yellow-500/10 border border-yellow-500/30">
-                      <p className="text-[13px] text-yellow-200 leading-relaxed">
-                        ✏️ {msg.aiResponse.correction}
-                      </p>
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
+              role={msg.role}
+              content={msg.content}
+              aiResponse={msg.aiResponse}
+              mode={persona === 'kuya_josh' ? 'heritage' : 'beginner'}
+            />
           ))}
           
           {isTyping && (
