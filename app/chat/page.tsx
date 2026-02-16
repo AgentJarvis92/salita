@@ -196,13 +196,13 @@ function ChatPageContent() {
                     </p>
                   </div>
 
-                  {/* Hint Box (Conditional - only when valid hint exists) */}
+                  {/* Hint Box (Conditional - only when valid hint exists) - Glass Panel Style */}
                   {msg.aiResponse?.hint && 
                    typeof msg.aiResponse.hint === 'string' && 
                    msg.aiResponse.hint.trim() !== '' && 
                    msg.aiResponse.hint !== 'None' && (
-                    <div className="rounded-2xl px-4 py-3 bg-[#D4AF37] text-[#0a0a0f]">
-                      <p className="text-[13px] leading-relaxed">
+                    <div className="rounded-2xl px-4 py-3 bg-white/[0.06] border border-white/10 backdrop-blur-md">
+                      <p className="text-[13px] leading-relaxed text-white/90">
                         {msg.aiResponse.hint}
                       </p>
                     </div>
