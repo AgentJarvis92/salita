@@ -54,13 +54,13 @@ export default function DashboardPage() {
             onClick={() => handlePersonaSelect('ate_maria')}
             className="w-full text-left rounded-2xl overflow-hidden relative h-[145px] group hover:scale-[1.02] transition-transform"
           >
-            {/* Background Image - positioned to show eyes clearly */}
+            {/* Background Image - centered portrait */}
             <div 
               className="absolute inset-0"
               style={{
                 backgroundImage: 'url(/avatars/ate-maria-portrait.webp)',
-                backgroundPosition: '55% 40%',
-                backgroundSize: 'contain',
+                backgroundPosition: 'center',
+                backgroundSize: 'cover',
                 backgroundRepeat: 'no-repeat'
               }}
             />
@@ -92,13 +92,13 @@ export default function DashboardPage() {
             onClick={() => handlePersonaSelect('kuya_josh')}
             className="w-full text-left rounded-2xl overflow-hidden relative h-[145px] group hover:scale-[1.02] transition-transform"
           >
-            {/* Background Image - positioned to show eyes clearly */}
+            {/* Background Image - centered portrait */}
             <div 
               className="absolute inset-0"
               style={{
                 backgroundImage: 'url(/avatars/kuya-josh-portrait.webp)',
-                backgroundPosition: '60% 40%',
-                backgroundSize: 'contain',
+                backgroundPosition: 'center',
+                backgroundSize: 'cover',
                 backgroundRepeat: 'no-repeat'
               }}
             />
