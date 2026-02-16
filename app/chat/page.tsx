@@ -7,11 +7,8 @@ import { useEffect, useState, useRef } from 'react';
 
 interface AIResponse {
   tagalog: string;
-  english: string;
+  correction: string;
   hint: string;
-  examples: string[];
-  correction?: string;
-  note?: string;
   tone: string;
 }
 
@@ -38,10 +35,12 @@ function ChatPageContent() {
     ate_maria: {
       name: 'Ate Maria',
       avatar: '/avatars/ate-maria-avatar.webp',
+      subtitle: 'Language Mentor',
     },
     kuya_josh: {
       name: 'Kuya Josh',
       avatar: '/avatars/kuya-josh-avatar.webp',
+      subtitle: 'Conversational Guide',
     },
   };
 
@@ -115,9 +114,8 @@ function ChatPageContent() {
         role: 'assistant',
         aiResponse: {
           tagalog: 'Sandali lang, may problema ako.',
-          english: 'Give me a moment, having trouble.',
-          hint: "Sabihin: 'Sige' o 'Okay'",
-          examples: ['Sige', 'Okay'],
+          correction: 'None',
+          hint: "Give me a moment, having trouble. Try saying: 'Sige' or 'Okay'",
           tone: 'warm',
         },
         timestamp: new Date(),
@@ -126,11 +124,6 @@ function ChatPageContent() {
     } finally {
       setIsTyping(false);
     }
-  };
-
-  const handleExampleClick = (example: string) => {
-    setInputValue(example);
-    handleSendMessage(example);
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -167,7 +160,7 @@ function ChatPageContent() {
           <div>
             <div className="text-white font-medium">{currentPersona.name}</div>
             <div className="text-white/40 text-sm">
-              {isTyping ? 'Typing...' : 'Online'}
+              {isTyping ? 'Typing...' : currentPersona.subtitle}
             </div>
           </div>
         </div>
@@ -189,55 +182,26 @@ function ChatPageContent() {
                 <div className="max-w-[85%] space-y-3">
                   {/* AI Response Card */}
                   <div className="rounded-2xl px-4 py-3 bg-white/[0.08] backdrop-blur-sm text-white">
-                    {/* Tagalog (Primary) */}
+                    {/* Tagalog Text */}
                     <p className="text-[17px] font-semibold leading-relaxed">
                       {msg.aiResponse?.tagalog}
                     </p>
-                    
-                    {/* English (Secondary) */}
-                    <p className="text-[12px] text-white/50 mt-1">
-                      {msg.aiResponse?.english}
-                    </p>
                   </div>
 
-                  {/* Hint Box */}
+                  {/* Hint Box (Always shown) */}
                   {msg.aiResponse?.hint && (
-                    <div className="rounded-xl px-4 py-2 bg-[#D4AF37]/10 border border-[#D4AF37]/30">
-                      <p className="text-[13px] text-[#D4AF37] italic">
+                    <div className="rounded-xl px-4 py-3 bg-[#D4AF37] text-[#0a0a0f]">
+                      <p className="text-[13px] leading-relaxed">
                         {msg.aiResponse.hint}
                       </p>
                     </div>
                   )}
 
-                  {/* Example Buttons */}
-                  {msg.aiResponse?.examples && msg.aiResponse.examples.length > 0 && (
-                    <div className="flex flex-wrap gap-2">
-                      {msg.aiResponse.examples.map((example, i) => (
-                        <button
-                          key={i}
-                          onClick={() => handleExampleClick(example)}
-                          className="px-4 py-2 rounded-full bg-white/[0.06] hover:bg-white/[0.12] text-white/80 text-[14px] transition-colors"
-                        >
-                          {example}
-                        </button>
-                      ))}
-                    </div>
-                  )}
-
-                  {/* Correction (if present) */}
-                  {msg.aiResponse?.correction && (
-                    <div className="rounded-xl px-4 py-2 bg-yellow-500/10 border border-yellow-500/30">
-                      <p className="text-[13px] text-yellow-200">
-                        {msg.aiResponse.correction}
-                      </p>
-                    </div>
-                  )}
-
-                  {/* Cultural Note (if present) */}
-                  {msg.aiResponse?.note && (
-                    <div className="rounded-xl px-4 py-2 bg-green-500/10 border border-green-500/30">
-                      <p className="text-[13px] text-green-200">
-                        💡 {msg.aiResponse.note}
+                  {/* Correction Box (Only if not "None") */}
+                  {msg.aiResponse?.correction && msg.aiResponse.correction !== 'None' && (
+                    <div className="rounded-xl px-4 py-3 bg-yellow-500/10 border border-yellow-500/30">
+                      <p className="text-[13px] text-yellow-200 leading-relaxed">
+                        ✏️ {msg.aiResponse.correction}
                       </p>
                     </div>
                   )}
