@@ -57,9 +57,12 @@ export default function DashboardPage() {
           >
             <div className="flex items-start gap-4">
               {/* Avatar */}
-              <div className="w-20 h-20 rounded-full bg-gradient-to-br from-blue-400 to-purple-500 flex-shrink-0 overflow-hidden">
-                {/* Placeholder for avatar - will be replaced */}
-                <div className="w-full h-full bg-gradient-to-br from-blue-300 to-purple-400" />
+              <div className="w-20 h-20 rounded-full flex-shrink-0 overflow-hidden">
+                <img 
+                  src="/avatars/ate-maria.png" 
+                  alt="Ate Maria"
+                  className="w-full h-full object-cover"
+                />
               </div>
 
               {/* Content */}
@@ -84,9 +87,12 @@ export default function DashboardPage() {
           >
             <div className="flex items-start gap-4">
               {/* Avatar */}
-              <div className="w-20 h-20 rounded-full bg-gradient-to-br from-gray-600 to-gray-800 flex-shrink-0 overflow-hidden">
-                {/* Placeholder for avatar - will be replaced */}
-                <div className="w-full h-full bg-gradient-to-br from-gray-500 to-gray-700" />
+              <div className="w-20 h-20 rounded-full flex-shrink-0 overflow-hidden">
+                <img 
+                  src="/avatars/kuya-josh.png" 
+                  alt="Kuya Josh"
+                  className="w-full h-full object-cover"
+                />
               </div>
 
               {/* Content */}
