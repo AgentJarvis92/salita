@@ -34,7 +34,7 @@ function validateResponse(data: any, persona: string): boolean {
 
 export async function POST(request: Request) {
   try {
-    const { message, persona } = await request.json()
+    const { message, persona, conversationHistory } = await request.json()
 
     if (!persona) {
       return NextResponse.json({ error: 'Missing persona' }, { status: 400 })
@@ -50,6 +50,27 @@ export async function POST(request: Request) {
       ? 'Kumusta' 
       : 'Hello, I want to learn Tagalog')
 
+    // Build conversation history with context
+    const messages: any[] = [{ role: 'system', content: systemPrompt }]
+    
+    // Add conversation history if provided (for state awareness)
+    if (conversationHistory && Array.isArray(conversationHistory) && conversationHistory.length > 0) {
+      conversationHistory.forEach((msg: any) => {
+        if (msg.role === 'user') {
+          messages.push({ role: 'user', content: msg.content })
+        } else if (msg.role === 'assistant' && msg.aiResponse) {
+          // Reconstruct assistant response for context
+          messages.push({ 
+            role: 'assistant', 
+            content: JSON.stringify(msg.aiResponse) 
+          })
+        }
+      })
+    }
+    
+    // Add current user message
+    messages.push({ role: 'user', content: userMessage })
+
     let attempts = 0
     const maxAttempts = 3
 
@@ -57,10 +78,7 @@ export async function POST(request: Request) {
       try {
         const completion = await openai.chat.completions.create({
           model: 'gpt-4o-mini',
-          messages: [
-            { role: 'system', content: systemPrompt },
-            { role: 'user', content: userMessage },
-          ],
+          messages,
           response_format: { type: 'json_object' },
           temperature: 0.7,
           max_tokens: 300,

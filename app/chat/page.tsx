@@ -82,12 +82,20 @@ function ChatPageContent() {
     setIsTyping(true);
 
     try {
+      // Build conversation history for state awareness
+      const conversationHistory = messages.map(msg => ({
+        role: msg.role,
+        content: msg.content,
+        aiResponse: msg.aiResponse
+      }));
+
       const response = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           message: messageText || '',
           persona,
+          conversationHistory,
         }),
       });
 
