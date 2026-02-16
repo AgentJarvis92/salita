@@ -60,14 +60,7 @@ export async function middleware(request: NextRequest) {
   // Protected routes - redirect to login if not authenticated
   if (!user && (request.nextUrl.pathname.startsWith('/chat') || 
                  request.nextUrl.pathname.startsWith('/dashboard'))) {
-    const redirectUrl = new URL('/login', request.url)
-    redirectUrl.searchParams.set('redirect', request.nextUrl.pathname)
-    return NextResponse.redirect(redirectUrl)
-  }
-
-  // If authenticated and on login/signup page, redirect to dashboard
-  if (user && (request.nextUrl.pathname === '/login' || request.nextUrl.pathname === '/auth/signup')) {
-    return NextResponse.redirect(new URL('/dashboard', request.url))
+    return NextResponse.redirect(new URL('/login', request.url))
   }
 
   return response
