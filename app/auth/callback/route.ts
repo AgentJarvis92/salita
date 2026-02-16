@@ -1,56 +1,20 @@
-import { NextResponse, type NextRequest } from 'next/server'
-import { createServerClient } from '@supabase/ssr'
+import { NextResponse } from 'next/server'
+import { createClient } from '@supabase/supabase-js'
 
-export async function GET(request: NextRequest) {
+export async function GET(request: Request) {
   const requestUrl = new URL(request.url)
   const code = requestUrl.searchParams.get('code')
-  const origin = process.env.NEXT_PUBLIC_SITE_URL || requestUrl.origin
 
   if (code) {
-    const response = NextResponse.redirect(new URL('/dashboard', origin))
-
-    const supabase = createServerClient(
+    const supabase = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        cookies: {
-          getAll() {
-            return request.cookies.getAll()
-          },
-          setAll(cookiesToSet) {
-            cookiesToSet.forEach(({ name, value, options }) => {
-              response.cookies.set(name, value, options)
-            })
-          },
-        },
-      }
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
     )
 
-    const { data: { user }, error: authError } = await supabase.auth.exchangeCodeForSession(code)
+    const { data: { user }, error } = await supabase.auth.exchangeCodeForSession(code)
 
-    if (authError) {
-      console.error('OAuth callback error:', authError)
-      return NextResponse.redirect(new URL('/login?error=oauth_failed', origin))
-    }
-
-    // Track signup event for new Google OAuth users
-    if (user) {
-      const { data: existingEvents } = await supabase
-        .from('analytics_events')
-        .select('id')
-        .eq('user_id', user.id)
-        .limit(1)
-
-      // If no existing events, this is a new signup
-      if (!existingEvents || existingEvents.length === 0) {
-        await supabase.from('analytics_events').insert({
-          user_id: user.id,
-          event_name: 'signup',
-          metadata: { method: 'google' }
-        })
-      }
-
-      // Create profile if doesn't exist
+    // Simple profile creation for new users
+    if (user && !error) {
       const { data: profile } = await supabase
         .from('profiles')
         .select('id')
@@ -64,10 +28,8 @@ export async function GET(request: NextRequest) {
         })
       }
     }
-
-    return response
   }
 
-  // No code provided, redirect to login
-  return NextResponse.redirect(new URL('/login', origin))
+  // Redirect to dashboard
+  return NextResponse.redirect(new URL('/dashboard', requestUrl.origin))
 }
