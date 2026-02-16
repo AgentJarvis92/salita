@@ -57,24 +57,38 @@ export default function ChatPage() {
     if (user && messages.length === 0) {
       setTimeout(() => {
         setIsTyping(true);
-        setTimeout(() => {
-          setIsTyping(false);
-          setMessages([{
-            id: '1',
-            role: 'assistant',
-            content: '',
-            tagalog: 'Kumusta, Kevin! 🇵🇭 Ready to practice your bargaining skills for the market?',
-            english: 'Hi, Kevin! 🇵🇭 Ready to practice your bargaining skills for the market?',
-            hint: 'Try saying: "Wala na bang tawad?" which means "Can you give a discount?"',
-            examples: ['Wala na bang tawad?', 'Magkano ito?'],
-            timestamp: new Date()
-          }]);
-        }, 1500);
+        setTimeout(async () => {
+          try {
+            const response = await fetch('/api/chat', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                message: 'Hi, I want to learn Tagalog',
+                persona,
+              }),
+            });
+            
+            const data = await response.json();
+            setIsTyping(false);
+            
+            if (response.ok) {
+              setMessages([{
+                id: '1',
+                role: 'assistant',
+                content: data.response,
+                timestamp: new Date()
+              }]);
+            }
+          } catch (error) {
+            setIsTyping(false);
+            console.error('Initial greeting error:', error);
+          }
+        }, 500);
       }, 500);
     }
-  }, [user, messages.length]);
+  }, [user, messages.length, persona]);
 
-  const handleSend = () => {
+  const handleSend = async () => {
     if (!inputValue.trim()) return;
 
     const userMessage: Message = {
@@ -85,24 +99,47 @@ export default function ChatPage() {
     };
 
     setMessages(prev => [...prev, userMessage]);
+    const messageToSend = inputValue;
     setInputValue('');
     
-    // Simulate AI response
+    // Call OpenAI API
     setIsTyping(true);
-    setTimeout(() => {
+    try {
+      const response = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          message: messageToSend,
+          persona,
+        }),
+      });
+
+      const data = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to get response');
+      }
+
       setIsTyping(false);
       const aiMessage: Message = {
         id: (Date.now() + 1).toString(),
         role: 'assistant',
-        content: '',
-        tagalog: 'Magaling! (Great!) The key is to be polite but firm.',
-        english: 'Great! The key is to be polite but firm.',
-        hint: 'Try saying: "Pwede bang bumaba ng konti?" which means "Can you lower it a bit?"',
-        examples: ['Pwede bang bumaba?', 'Mahal naman'],
+        content: data.response,
         timestamp: new Date()
       };
       setMessages(prev => [...prev, aiMessage]);
-    }, 1500);
+    } catch (error) {
+      setIsTyping(false);
+      console.error('Chat error:', error);
+      // Show error message to user
+      const errorMessage: Message = {
+        id: (Date.now() + 1).toString(),
+        role: 'assistant',
+        content: 'Sorry, I encountered an error. Please try again.',
+        timestamp: new Date()
+      };
+      setMessages(prev => [...prev, errorMessage]);
+    }
   };
 
   const handleExampleClick = (example: string) => {
