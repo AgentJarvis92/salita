@@ -4,7 +4,6 @@ import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/lib/auth-context'
-import { trackEvent, ANALYTICS_EVENTS } from '@/lib/analytics'
 
 export default function LoginPage() {
   const [email, setEmail] = useState('')
@@ -53,8 +52,6 @@ export default function LoginPage() {
       setError(error.message)
       setLoading(false)
     } else {
-      // Track signup event
-      await trackEvent(ANALYTICS_EVENTS.SIGNUP, { method: 'email' })
       router.push('/')
     }
   }
