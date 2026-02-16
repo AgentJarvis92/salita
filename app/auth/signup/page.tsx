@@ -7,9 +7,6 @@ import { useAuth } from '@/lib/auth-context'
 import { z } from 'zod'
 import Link from 'next/link'
 
-export const dynamic = 'force-dynamic'
-export const revalidate = 0
-
 const authSchema = z.object({
   email: z.string()
     .min(1, 'Email is required')
