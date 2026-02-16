@@ -2,8 +2,13 @@
 
 import { Suspense } from 'react';
 import { useAuth } from '@/lib/auth-context';
+import { useVoice } from '@/lib/voice-context';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useState, useRef } from 'react';
+import MicButton from '@/components/voice/MicButton';
+import VoiceToggle from '@/components/voice/VoiceToggle';
+import PlaybackButton from '@/components/voice/PlaybackButton';
+import { synthesizeAndPlay } from '@/lib/speech/tts';
 
 interface AIResponse {
   tagalog: string;
@@ -15,13 +20,14 @@ interface AIResponse {
 interface Message {
   id: string;
   role: 'user' | 'assistant';
-  content?: string; // For user messages
-  aiResponse?: AIResponse; // For AI messages
+  content?: string;
+  aiResponse?: AIResponse;
   timestamp: Date;
 }
 
 function ChatPageContent() {
   const { user, loading } = useAuth();
+  const { voiceEnabled } = useVoice();
   const router = useRouter();
   const searchParams = useSearchParams();
   const persona = searchParams.get('persona') || 'ate_maria';
@@ -29,7 +35,9 @@ function ChatPageContent() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputValue, setInputValue] = useState('');
   const [isTyping, setIsTyping] = useState(false);
+  const [showOnboarding, setShowOnboarding] = useState(true);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const hasAutoPlayedGreeting = useRef(false);
 
   const personaInfo = {
     ate_maria: {
@@ -63,11 +71,31 @@ function ChatPageContent() {
     }
   }, []);
 
+  // Auto-play greeting via TTS when first AI message arrives
+  useEffect(() => {
+    if (
+      voiceEnabled &&
+      !hasAutoPlayedGreeting.current &&
+      messages.length === 1 &&
+      messages[0].role === 'assistant' &&
+      messages[0].aiResponse?.tagalog
+    ) {
+      hasAutoPlayedGreeting.current = true;
+      synthesizeAndPlay(messages[0].aiResponse.tagalog).catch(() => {
+        // Silently fail - autoplay may be blocked
+      });
+    }
+  }, [messages, voiceEnabled]);
+
   const handleSendMessage = async (text?: string, isInitial?: boolean) => {
     const messageText = text || inputValue.trim();
     if (!messageText && !isInitial) return;
 
-    // Add user message (unless it's initial greeting request)
+    // Hide onboarding once user sends a message
+    if (!isInitial) {
+      setShowOnboarding(false);
+    }
+
     if (!isInitial) {
       const userMessage: Message = {
         id: crypto.randomUUID(),
@@ -82,7 +110,6 @@ function ChatPageContent() {
     setIsTyping(true);
 
     try {
-      // Build conversation history for state awareness
       const conversationHistory = messages.map(msg => ({
         role: msg.role,
         content: msg.content,
@@ -105,7 +132,6 @@ function ChatPageContent() {
         throw new Error(data.error || 'Failed to get response');
       }
 
-      // Add AI response with full structure
       const aiMessage: Message = {
         id: crypto.randomUUID(),
         role: 'assistant',
@@ -114,9 +140,13 @@ function ChatPageContent() {
       };
 
       setMessages((prev) => [...prev, aiMessage]);
+
+      // Auto-play new AI messages if voice is enabled
+      if (voiceEnabled && data.response?.tagalog) {
+        synthesizeAndPlay(data.response.tagalog).catch(() => {});
+      }
     } catch (error) {
       console.error('Error sending message:', error);
-      // Add error fallback
       const errorMessage: Message = {
         id: crypto.randomUUID(),
         role: 'assistant',
@@ -131,6 +161,12 @@ function ChatPageContent() {
       setMessages((prev) => [...prev, errorMessage]);
     } finally {
       setIsTyping(false);
+    }
+  };
+
+  const handleVoiceTranscription = (text: string) => {
+    if (text.trim()) {
+      handleSendMessage(text);
     }
   };
 
@@ -165,18 +201,31 @@ function ChatPageContent() {
             alt={currentPersona.name}
             className="w-10 h-10 rounded-full object-cover"
           />
-          <div>
+          <div className="flex-1">
             <div className="text-white font-medium">{currentPersona.name}</div>
             <div className="text-white/40 text-sm">
               {isTyping ? 'Typing...' : currentPersona.subtitle}
             </div>
           </div>
+          {/* Voice Toggle */}
+          <VoiceToggle />
         </div>
       </div>
 
       {/* Messages - Scrollable Area */}
       <div className="flex-1 overflow-y-auto">
         <div className="max-w-2xl mx-auto px-4 py-6 space-y-4">
+          {/* Onboarding Voice Moment */}
+          {showOnboarding && messages.length <= 1 && (
+            <div className="flex flex-col items-center py-8 animate-fade-in">
+              <MicButton
+                onTranscription={handleVoiceTranscription}
+                variant="onboarding"
+              />
+              <p className="text-white/30 text-xs mt-4">or type below</p>
+            </div>
+          )}
+
           {messages.map((msg) => (
             <div
               key={msg.id}
@@ -188,18 +237,23 @@ function ChatPageContent() {
                 </div>
               ) : (
                 <div className="max-w-[85%] space-y-3">
-                  {/* AI Response Card - Frosted Navy Blue Glass */}
+                  {/* AI Response Card */}
                   <div 
                     className="rounded-2xl px-4 py-3 text-white border border-white/5 backdrop-blur-md"
                     style={{ backgroundColor: 'rgba(30, 58, 95, 0.25)' }}
                   >
-                    {/* Tagalog Text */}
-                    <p className="text-[16px] leading-relaxed">
-                      {msg.aiResponse?.tagalog}
-                    </p>
+                    <div className="flex items-start gap-2">
+                      <p className="text-[16px] leading-relaxed flex-1">
+                        {msg.aiResponse?.tagalog}
+                      </p>
+                      {/* Playback button */}
+                      {msg.aiResponse?.tagalog && (
+                        <PlaybackButton text={msg.aiResponse.tagalog} className="mt-0.5" />
+                      )}
+                    </div>
                   </div>
 
-                  {/* Hint Box (Conditional - only when valid hint exists) - Frosted Navy Glass */}
+                  {/* Hint Box */}
                   {msg.aiResponse?.hint && 
                    typeof msg.aiResponse.hint === 'string' && 
                    msg.aiResponse.hint.trim() !== '' && 
@@ -214,7 +268,7 @@ function ChatPageContent() {
                     </div>
                   )}
 
-                  {/* Correction Box (Only if not "None") */}
+                  {/* Correction Box */}
                   {msg.aiResponse?.correction && msg.aiResponse.correction !== 'None' && (
                     <div className="rounded-2xl px-4 py-3 bg-yellow-500/10 border border-yellow-500/30">
                       <p className="text-[13px] text-yellow-200 leading-relaxed">
@@ -249,6 +303,11 @@ function ChatPageContent() {
       <div className="flex-shrink-0 bg-[#0a0a0f]/95 backdrop-blur-sm border-t border-white/5 pb-safe">
         <div className="max-w-2xl mx-auto px-4 py-3">
           <div className="flex items-end gap-2">
+            {/* Inline Mic Button */}
+            <MicButton
+              onTranscription={handleVoiceTranscription}
+              variant="inline"
+            />
             <div className="flex-1 relative">
               <textarea
                 value={inputValue}
