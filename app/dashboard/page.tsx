@@ -59,7 +59,7 @@ export default function DashboardPage() {
               className="absolute inset-0 bg-cover"
               style={{
                 backgroundImage: 'url(/avatars/ate-maria-portrait.webp)',
-                backgroundPosition: '55% 35%',
+                backgroundPosition: '55% 40%',
                 backgroundSize: '115%'
               }}
             />
