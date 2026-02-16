@@ -70,7 +70,7 @@ function ChatPageContent() {
     // Add user message (unless it's initial greeting request)
     if (!isInitial) {
       const userMessage: Message = {
-        id: Date.now().toString(),
+        id: crypto.randomUUID(),
         role: 'user',
         content: messageText,
         timestamp: new Date(),
@@ -107,7 +107,7 @@ function ChatPageContent() {
 
       // Add AI response with full structure
       const aiMessage: Message = {
-        id: (Date.now() + 1).toString(),
+        id: crypto.randomUUID(),
         role: 'assistant',
         aiResponse: data.response,
         timestamp: new Date(),
@@ -118,7 +118,7 @@ function ChatPageContent() {
       console.error('Error sending message:', error);
       // Add error fallback
       const errorMessage: Message = {
-        id: (Date.now() + 1).toString(),
+        id: crypto.randomUUID(),
         role: 'assistant',
         aiResponse: {
           tagalog: 'Sandali lang, may problema ako.',
@@ -134,7 +134,7 @@ function ChatPageContent() {
     }
   };
 
-  const handleKeyPress = (e: React.KeyboardEvent) => {
+  const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleSendMessage();
@@ -188,8 +188,11 @@ function ChatPageContent() {
                 </div>
               ) : (
                 <div className="max-w-[85%] space-y-3">
-                  {/* AI Response Card */}
-                  <div className="rounded-2xl px-4 py-3 bg-white/[0.08] backdrop-blur-sm text-white">
+                  {/* AI Response Card - Frosted Navy Blue Glass */}
+                  <div 
+                    className="rounded-2xl px-4 py-3 text-white border border-white/5 backdrop-blur-md"
+                    style={{ backgroundColor: 'rgba(30, 58, 95, 0.25)' }}
+                  >
                     {/* Tagalog Text */}
                     <p className="text-[16px] leading-relaxed">
                       {msg.aiResponse?.tagalog}
@@ -226,7 +229,10 @@ function ChatPageContent() {
           
           {isTyping && (
             <div className="flex justify-start">
-              <div className="bg-white/[0.08] backdrop-blur-sm rounded-2xl px-4 py-3">
+              <div 
+                className="rounded-2xl px-4 py-3 border border-white/5 backdrop-blur-md"
+                style={{ backgroundColor: 'rgba(30, 58, 95, 0.25)' }}
+              >
                 <div className="flex gap-1">
                   <div className="w-2 h-2 rounded-full bg-white/40 animate-bounce" style={{ animationDelay: '0ms' }} />
                   <div className="w-2 h-2 rounded-full bg-white/40 animate-bounce" style={{ animationDelay: '150ms' }} />
@@ -247,7 +253,7 @@ function ChatPageContent() {
               <textarea
                 value={inputValue}
                 onChange={(e) => setInputValue(e.target.value)}
-                onKeyPress={handleKeyPress}
+                onKeyDown={handleKeyDown}
                 placeholder="Message in English or Tagalog"
                 className="w-full bg-white/[0.08] text-white rounded-3xl px-5 py-3 resize-none focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/50 placeholder-white/30 backdrop-blur-sm max-h-[120px]"
                 rows={1}

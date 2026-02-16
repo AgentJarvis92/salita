@@ -3,17 +3,41 @@
 import { useAuth } from '@/lib/auth-context';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
+import { createClient } from '@/lib/supabase';
 
 export default function DashboardPage() {
   const { user, loading } = useAuth();
   const router = useRouter();
   const [selectedPersona, setSelectedPersona] = useState<string | null>(null);
+  const [userName, setUserName] = useState<string>('');
 
   useEffect(() => {
     if (!loading && !user) {
       router.push('/login');
     }
   }, [user, loading, router]);
+
+  useEffect(() => {
+    async function fetchUserName() {
+      if (user) {
+        const supabase = createClient();
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('name')
+          .eq('user_id', user.id)
+          .single();
+        
+        if (profile?.name) {
+          setUserName(profile.name.toUpperCase());
+        } else {
+          // Clean fallback: use email username but sanitize
+          const emailName = user.email?.split('@')[0]?.replace(/[^a-zA-Z0-9]/g, '') || 'FRIEND';
+          setUserName(emailName.toUpperCase());
+        }
+      }
+    }
+    fetchUserName();
+  }, [user]);
 
   if (loading) {
     return (
@@ -38,7 +62,7 @@ export default function DashboardPage() {
       <div className="pb-24 px-4 pt-8 max-w-[430px] mx-auto">
         {/* Greeting */}
         <p className="text-xs text-[#D4AF37] uppercase tracking-wider mb-2">
-          KUMUSTA, {user.email?.split('@')[0]?.toUpperCase() || 'KEVIN'}
+          KUMUSTA, {userName || 'FRIEND'}
         </p>
 
         {/* Headline - Updated */}
