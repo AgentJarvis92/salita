@@ -142,9 +142,9 @@ function ChatPageContent() {
   }
 
   return (
-    <div className="min-h-screen bg-[#0a0a0f] flex flex-col">
+    <div className="min-h-screen bg-[#0a0a0f] flex flex-col max-h-screen overflow-hidden">
       {/* Header */}
-      <div className="sticky top-0 z-10 bg-[#0a0a0f]/80 backdrop-blur-sm border-b border-white/5">
+      <div className="flex-shrink-0 bg-[#0a0a0f]/80 backdrop-blur-sm border-b border-white/5">
         <div className="max-w-2xl mx-auto px-4 py-4 flex items-center gap-3">
           <button
             onClick={() => router.push('/dashboard')}
@@ -166,9 +166,9 @@ function ChatPageContent() {
         </div>
       </div>
 
-      {/* Messages */}
+      {/* Messages - Scrollable Area */}
       <div className="flex-1 overflow-y-auto px-4 py-6">
-        <div className="max-w-2xl mx-auto space-y-4">
+        <div className="max-w-2xl mx-auto space-y-4 pb-4">
           {messages.map((msg) => (
             <div
               key={msg.id}
@@ -225,16 +225,16 @@ function ChatPageContent() {
         </div>
       </div>
 
-      {/* Input */}
-      <div className="sticky bottom-0 bg-[#0a0a0f]/80 backdrop-blur-sm border-t border-white/5">
-        <div className="max-w-2xl mx-auto px-4 py-4">
+      {/* Input - Fixed at Bottom */}
+      <div className="flex-shrink-0 bg-[#0a0a0f]/80 backdrop-blur-sm border-t border-white/5">
+        <div className="max-w-2xl mx-auto px-4 py-4 safe-bottom">
           <div className="flex items-end gap-2">
             <div className="flex-1 relative">
               <textarea
                 value={inputValue}
                 onChange={(e) => setInputValue(e.target.value)}
                 onKeyPress={handleKeyPress}
-                placeholder="Type a message in English or Tagalog..."
+                placeholder="Message in English or Tagalog"
                 className="w-full bg-white/[0.08] text-white rounded-3xl px-5 py-3 pr-12 resize-none focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/50 placeholder-white/30 backdrop-blur-sm"
                 rows={1}
                 style={{ maxHeight: '120px' }}
