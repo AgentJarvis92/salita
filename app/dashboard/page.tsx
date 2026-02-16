@@ -41,10 +41,10 @@ export default function DashboardPage() {
           KUMUSTA, {user.email?.split('@')[0]?.toUpperCase() || 'KEVIN'}
         </p>
 
-        {/* Headline */}
-        <h1 className="text-3xl font-bold mb-2">MEET YOUR AI</h1>
+        {/* Headline - Updated */}
+        <h1 className="text-3xl font-bold mb-2">Start Speaking Tagalog</h1>
         <p className="text-sm text-gray-400 mb-6">
-          Start a conversation and learn naturally with an advanced persona.
+          Practice naturally with a mentor who understands your journey.
         </p>
 
         {/* AI Persona Cards */}
@@ -73,7 +73,7 @@ export default function DashboardPage() {
               </div>
               <h2 className="text-xl font-bold mb-0.5">Ate Maria</h2>
               <p className="text-[11px] text-gray-300 leading-snug">
-                For those who don't know any Tagalog. Start from zero with patient guidance.
+                Start from zero. Clear English guidance. Gentle, patient support.
               </p>
             </div>
           </button>
@@ -102,7 +102,7 @@ export default function DashboardPage() {
               </div>
               <h2 className="text-xl font-bold mb-0.5">Kuya Josh</h2>
               <p className="text-[11px] text-gray-300 leading-snug">
-                For those who understand some but can't speak. Practice naturally.
+                You understand it. Let's help you speak it confidently.
               </p>
             </div>
           </button>
