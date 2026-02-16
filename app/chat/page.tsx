@@ -8,7 +8,7 @@ import { useEffect, useState, useRef } from 'react';
 interface AIResponse {
   tagalog: string;
   correction: string;
-  hint: string;
+  hint: string | null;
   tone: string;
 }
 
@@ -115,8 +115,8 @@ function ChatPageContent() {
         aiResponse: {
           tagalog: 'Sandali lang, may problema ako.',
           correction: 'None',
-          hint: "Give me a moment, having trouble. Try saying: 'Sige' or 'Okay'",
-          tone: 'warm',
+          hint: persona === 'kuya_josh' ? null : "Give me a moment, having trouble. Try saying: 'Sige' or 'Okay'",
+          tone: persona === 'kuya_josh' ? 'casual' : 'warm',
         },
         timestamp: new Date(),
       };

@@ -1,59 +1,72 @@
 # AI System Prompt Version History
 
-## v3.0 (2026-02-15) - CURRENT
+## v3.1 (2026-02-15) - CURRENT
 
 **Status:** Active in production  
 **Location:** `/lib/ai/systemPrompts.ts`  
 **Deployment:** Phase 5 - AI Chat MVP  
 
-**MAJOR UPDATE: Beginner Mode State-Aware v3**
+**MAJOR UPDATE: Heritage Mode v2 - Conversational + State Aware**
 
-**Changes from v2.1:**
-- **State Awareness:** Remembers what was taught, no looping
-- **Progression Tracking:** Only advances after user succeeds
-- **Conditional Hints:** Only shows hints when introducing new phrases or correcting
-- **English Input Handling:** Gentle redirect without restarting lesson
-- **No Looping Rule:** Never repeats same phrase/hint multiple turns
-- **Clear Lesson Flow:** Greeting → Identity → Question → Response → Expand
+**Changes from v3.0:**
+- **Heritage Mode:** v1.0 → v2.0 (Complete redesign)
+  - Removed hint system entirely
+  - Pure conversational flow (no teaching bubbles)
+  - State awareness (remembers context, no looping)
+  - Inline natural corrections only
+  - `hint: null` ALWAYS (not "None")
+- **Beginner Mode:** Unchanged (v3.0 still current)
 
 **Beginner Mode (Ate Maria) v3.0:**
 - State-aware progression (remembers what was taught)
 - Conditional hints (only when needed, not after success)
-- English input handling (gentle redirect: "Sa Tagalog, sabihin natin: 'Kumusta!' 😊")
+- English input handling (gentle redirect)
 - No looping (never repeats same hint for same phrase)
 - Clear lesson structure (advance only when user succeeds)
 - Warm, encouraging, human tone
-- NOT robotic, repetitive, or verbose
 
-**Heritage Mode (Kuya Josh) v2.1:**
-- Unchanged (still working well)
-- Defaults to Tagalog only
-- NO automatic English hints
-- Natural corrections with brief explanations
-- Casual, confident tone
+**Heritage Mode (Kuya Josh) v2.0:**
+- **NO HINT SYSTEM** - `hint: null` always
+- Pure conversational flow
+- State awareness (remembers topic, no repeat questions)
+- English input: Gentle Tagalog encouragement
+- Inline natural corrections (no lectures)
+- Casual, confident, natural tone
+- Progression through scenarios, not drills
 
-**Critical Improvements:**
-1. **State Awareness** - AI remembers conversation context
-2. **Progression** - No restart after user replies
-3. **Conditional Hints** - Only when introducing or correcting
-4. **No Looping** - Avoids repetition loops
-5. **English Handling** - Gentle redirect without full restart
+**Critical Improvements (Heritage v2):**
+1. **Removed Hints** - Pure conversation, no teaching mode
+2. **State Awareness** - Remembers context, progresses naturally
+3. **Natural Corrections** - Inline, brief, no grammar breakdown
+4. **Conversational Flow** - Real Filipino chat patterns
+
+---
+
+## v3.0 (2026-02-15) - DEPRECATED (Beginner only)
+
+**Status:** Beginner mode still in use, Heritage deprecated  
+**Location:** `/lib/ai/systemPrompts.ts`  
+**Deployment:** Phase 5 - AI Chat MVP  
+
+**Changes from v2.1:**
+- **Beginner Mode:** State-aware progression (v3.0)
+- **Heritage Mode:** Had hint system (deprecated in v3.1)
+
+**Replaced by:** v3.1 with Heritage v2 (conversational)
 
 ---
 
 ## v2.1 (2026-02-15) - DEPRECATED
 
-**Status:** Deprecated (Beginner only)  
+**Status:** Deprecated (both modes)  
 **Location:** Archived  
-**Reason for deprecation:** No state awareness, looping issues
+**Reason for deprecation:** 
+- Beginner: No state awareness, looping issues
+- Heritage: Had hint system, not purely conversational
 
-**Issues:**
-- No memory of what was already taught
-- Would repeat same hints multiple turns
-- Would restart lesson after user replies
-- No progression tracking
-
-**Replaced by:** v3.0 with state-aware Beginner mode
+**Replaced by:** 
+- Beginner: v3.0 (state-aware)
+- Heritage: v2.0 (conversational)
 
 ---
 
@@ -61,26 +74,11 @@
 
 **Status:** Deprecated  
 **Location:** Archived  
-**Deployment:** Phase 5 - AI Chat MVP  
 
 **Changes from v1.0:**
-- Fixed over-explanation issue in Beginner mode
+- Fixed over-explanation issue
 - Enforced structured speaking flow
 - Clearer anti-repetition rules
-- Better correction handling
-- Separated prompts into dedicated file (systemPrompts.ts)
-
-**Beginner Mode (Ate Maria) v2.0:**
-- Always includes "Sabihin (Say): <exact sentence>"
-- Short English hints (1-2 sentences max)
-- Prioritizes speaking over explanation
-- Warm, supportive tone
-
-**Heritage Mode (Kuya Josh) v2.0:**
-- Defaults to Tagalog only
-- NO automatic English hints
-- Natural corrections with brief explanations
-- Casual, confident tone
 
 **Replaced by:** v2.1 with compact hints and brand alignment
 
@@ -90,12 +88,10 @@
 
 **Status:** Deprecated  
 **Location:** Inline in `/app/api/chat/route.ts` (archived)  
-**Reason for deprecation:** Over-explanation, inconsistent structure
 
 **Issues:**
-- Too many separate fields (tagalog, english, hint, examples, correction, note)
+- Too many fields
 - Redundancy between fields
-- Cognitive overload for users
-- Unclear what to focus on
+- Cognitive overload
 
-**Replaced by:** v2.0 with simplified 4-field structure
+**Replaced by:** v2.0 with simplified structure

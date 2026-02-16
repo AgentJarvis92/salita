@@ -9,21 +9,27 @@ const openai = new OpenAI({
 interface AIResponse {
   tagalog: string
   correction: string
-  hint: string
+  hint: string | null
   tone: string
 }
 
-function validateResponse(data: any): boolean {
-  return (
+function validateResponse(data: any, persona: string): boolean {
+  const baseValid = (
     data &&
     typeof data.tagalog === 'string' &&
     data.tagalog.length > 0 &&
     typeof data.correction === 'string' &&
-    typeof data.hint === 'string' &&
-    data.hint.length > 0 &&
     typeof data.tone === 'string' &&
     (data.tone === 'warm' || data.tone === 'casual')
   )
+
+  // Heritage mode: hint must be null
+  if (persona === 'kuya_josh') {
+    return baseValid && data.hint === null
+  }
+
+  // Beginner mode: hint must be a non-empty string
+  return baseValid && typeof data.hint === 'string' && data.hint.length > 0
 }
 
 export async function POST(request: Request) {
@@ -40,7 +46,9 @@ export async function POST(request: Request) {
       : BEGINNER_SYSTEM_PROMPT
 
     // For initial greeting (empty message)
-    const userMessage = message || 'Hello, I want to learn Tagalog'
+    const userMessage = message || (persona === 'kuya_josh' 
+      ? 'Kumusta' 
+      : 'Hello, I want to learn Tagalog')
 
     let attempts = 0
     const maxAttempts = 3
@@ -62,7 +70,7 @@ export async function POST(request: Request) {
         const responseData: AIResponse = JSON.parse(responseText)
 
         // Validate response
-        if (validateResponse(responseData)) {
+        if (validateResponse(responseData, persona)) {
           return NextResponse.json({
             success: true,
             response: responseData,
@@ -89,7 +97,7 @@ export async function POST(request: Request) {
       response: {
         tagalog: 'Sandali lang, nagkaka-problema ako ngayon.',
         correction: 'None',
-        hint: "Give me a moment, having trouble. Try saying: 'Sige' or 'Okay'",
+        hint: persona === 'kuya_josh' ? null : "Give me a moment, having trouble. Try saying: 'Sige' or 'Okay'",
         tone: persona === 'kuya_josh' ? 'casual' : 'warm',
       },
     })
