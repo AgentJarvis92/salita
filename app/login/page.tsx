@@ -49,7 +49,7 @@ export default function LoginPage() {
         setError('Email or password is incorrect')
         setLoading(false)
       } else {
-        router.push('/')
+        router.push('/dashboard')
       }
     } catch (validationError: unknown) {
       if (validationError instanceof z.ZodError) {
