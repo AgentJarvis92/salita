@@ -3,7 +3,7 @@
 import { useAuth } from '@/lib/auth-context';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import { createClient } from '@/lib/supabase';
+import { supabase } from '@/lib/supabase';
 
 export default function DashboardPage() {
   const { user, loading } = useAuth();
@@ -20,7 +20,6 @@ export default function DashboardPage() {
   useEffect(() => {
     async function fetchUserName() {
       if (user) {
-        const supabase = createClient();
         const { data: profile } = await supabase
           .from('profiles')
           .select('name')
