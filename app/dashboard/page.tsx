@@ -59,7 +59,7 @@ export default function DashboardPage() {
               {/* Avatar */}
               <div className="w-20 h-20 rounded-full flex-shrink-0 overflow-hidden">
                 <img 
-                  src="/avatars/ate-maria.png" 
+                  src="/avatars/ate-maria-avatar.webp" 
                   alt="Ate Maria"
                   className="w-full h-full object-cover"
                 />
@@ -89,7 +89,7 @@ export default function DashboardPage() {
               {/* Avatar */}
               <div className="w-20 h-20 rounded-full flex-shrink-0 overflow-hidden">
                 <img 
-                  src="/avatars/kuya-josh.png" 
+                  src="/avatars/kuya-josh-avatar.webp" 
                   alt="Kuya Josh"
                   className="w-full h-full object-cover"
                 />

@@ -37,11 +37,11 @@ function ChatPageContent() {
   const personaInfo = {
     ate_maria: {
       name: 'Ate Maria',
-      avatar: '/avatars/ate-maria.png',
+      avatar: '/avatars/ate-maria-avatar.webp',
     },
     kuya_josh: {
       name: 'Kuya Josh',
-      avatar: '/avatars/kuya-josh.png',
+      avatar: '/avatars/kuya-josh-avatar.webp',
     },
   };
 
