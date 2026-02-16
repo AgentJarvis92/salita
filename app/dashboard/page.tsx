@@ -59,8 +59,8 @@ export default function DashboardPage() {
               className="absolute inset-0 bg-cover"
               style={{
                 backgroundImage: 'url(/avatars/ate-maria-portrait.webp)',
-                backgroundPosition: '70% 35%',
-                backgroundSize: 'cover'
+                backgroundPosition: '55% 35%',
+                backgroundSize: '115%'
               }}
             />
             
@@ -97,7 +97,7 @@ export default function DashboardPage() {
               style={{
                 backgroundImage: 'url(/avatars/kuya-josh-portrait.webp)',
                 backgroundPosition: '60% 40%',
-                backgroundSize: 'cover'
+                backgroundSize: '115%'
               }}
             />
             
