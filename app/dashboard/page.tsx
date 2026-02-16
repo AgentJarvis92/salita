@@ -52,7 +52,7 @@ export default function DashboardPage() {
           {/* Ate Maria Card - BEGINNER */}
           <button
             onClick={() => handlePersonaSelect('ate_maria')}
-            className="w-full text-right rounded-2xl overflow-hidden relative h-[145px] group hover:scale-[1.02] transition-transform"
+            className="w-full text-left rounded-2xl overflow-hidden relative h-[145px] group hover:scale-[1.02] transition-transform"
           >
             {/* Background Image - centered portrait */}
             <div 
@@ -69,19 +69,19 @@ export default function DashboardPage() {
             <div 
               className="absolute inset-0"
               style={{
-                background: 'linear-gradient(90deg, rgba(0,0,0,0.00) 0%, rgba(0,0,0,0.35) 45%, rgba(0,0,0,0.65) 100%)'
+                background: 'linear-gradient(90deg, rgba(0,0,0,0.65) 0%, rgba(0,0,0,0.35) 45%, rgba(0,0,0,0.00) 100%)'
               }}
             />
             
             {/* Content */}
-            <div className="relative h-full flex flex-col justify-end items-end p-4">
-              <div className="inline-block mb-1.5">
+            <div className="relative h-full flex flex-col justify-end p-4">
+              <div className="inline-block self-start mb-1.5">
                 <div className="bg-[#D4AF37] text-black text-[10px] font-bold tracking-wider px-2.5 py-1 rounded-full">
                   BEGINNER
                 </div>
               </div>
               <h2 className="text-xl font-bold mb-0.5">Ate Maria</h2>
-              <p className="text-[11px] text-gray-300 leading-snug text-right">
+              <p className="text-[11px] text-gray-300 leading-snug">
                 Start from zero. Clear English guidance. Gentle, patient support.
               </p>
             </div>
@@ -90,7 +90,7 @@ export default function DashboardPage() {
           {/* Kuya Josh Card - HERITAGE */}
           <button
             onClick={() => handlePersonaSelect('kuya_josh')}
-            className="w-full text-right rounded-2xl overflow-hidden relative h-[145px] group hover:scale-[1.02] transition-transform"
+            className="w-full text-left rounded-2xl overflow-hidden relative h-[145px] group hover:scale-[1.02] transition-transform"
           >
             {/* Background Image - centered portrait */}
             <div 
@@ -107,19 +107,19 @@ export default function DashboardPage() {
             <div 
               className="absolute inset-0"
               style={{
-                background: 'linear-gradient(90deg, rgba(0,0,0,0.00) 0%, rgba(0,0,0,0.35) 45%, rgba(0,0,0,0.65) 100%)'
+                background: 'linear-gradient(90deg, rgba(0,0,0,0.65) 0%, rgba(0,0,0,0.35) 45%, rgba(0,0,0,0.00) 100%)'
               }}
             />
             
             {/* Content */}
-            <div className="relative h-full flex flex-col justify-end items-end p-4">
-              <div className="inline-block mb-1.5">
+            <div className="relative h-full flex flex-col justify-end p-4">
+              <div className="inline-block self-start mb-1.5">
                 <div className="bg-[#D4AF37] text-black text-[10px] font-bold tracking-wider px-2.5 py-1 rounded-full">
                   HERITAGE
                 </div>
               </div>
               <h2 className="text-xl font-bold mb-0.5">Kuya Josh</h2>
-              <p className="text-[11px] text-gray-300 leading-snug text-right">
+              <p className="text-[11px] text-gray-300 leading-snug">
                 You understand it. Let's help you speak it confidently.
               </p>
             </div>
