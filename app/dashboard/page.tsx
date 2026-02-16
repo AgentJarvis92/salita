@@ -59,8 +59,8 @@ export default function DashboardPage() {
               className="absolute inset-0"
               style={{
                 backgroundImage: 'url(/avatars/ate-maria-portrait.webp)',
-                backgroundPosition: 'center',
-                backgroundSize: 'contain',
+                backgroundPosition: '65% center',
+                backgroundSize: 'cover',
                 backgroundRepeat: 'no-repeat'
               }}
             />
@@ -97,8 +97,8 @@ export default function DashboardPage() {
               className="absolute inset-0"
               style={{
                 backgroundImage: 'url(/avatars/kuya-josh-portrait.webp)',
-                backgroundPosition: 'center',
-                backgroundSize: 'contain',
+                backgroundPosition: '65% center',
+                backgroundSize: 'cover',
                 backgroundRepeat: 'no-repeat'
               }}
             />
