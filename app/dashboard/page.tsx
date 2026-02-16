@@ -60,7 +60,7 @@ export default function DashboardPage() {
               style={{
                 backgroundImage: 'url(/avatars/ate-maria-portrait.webp)',
                 backgroundPosition: 'center',
-                backgroundSize: 'cover',
+                backgroundSize: '75%',
                 backgroundRepeat: 'no-repeat'
               }}
             />
@@ -98,7 +98,7 @@ export default function DashboardPage() {
               style={{
                 backgroundImage: 'url(/avatars/kuya-josh-portrait.webp)',
                 backgroundPosition: 'center',
-                backgroundSize: 'cover',
+                backgroundSize: '75%',
                 backgroundRepeat: 'no-repeat'
               }}
             />
