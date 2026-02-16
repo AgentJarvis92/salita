@@ -183,7 +183,7 @@ function ChatPageContent() {
               className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
             >
               {msg.role === 'user' ? (
-                <div className="max-w-[85%] rounded-2xl px-4 py-3 bg-[#D4AF37] text-[#0a0a0f]">
+                <div className="max-w-[85%] rounded-2xl px-4 py-3 bg-[#0A84FF] text-white">
                   <p className="text-[15px] leading-relaxed">{msg.content}</p>
                 </div>
               ) : (
