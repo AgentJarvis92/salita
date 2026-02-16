@@ -43,36 +43,36 @@ export default function DashboardPage() {
 
         {/* Headline */}
         <h1 className="text-3xl font-bold mb-2">MEET YOUR AI</h1>
-        <p className="text-sm text-gray-400 mb-8">
+        <p className="text-sm text-gray-400 mb-6">
           Start a conversation and learn naturally with an advanced persona.
         </p>
 
         {/* AI Persona Cards */}
-        <div className="space-y-4 mb-8">
+        <div className="space-y-3 mb-6">
           {/* Ate Maria Card - BEGINNER */}
           <button
             onClick={() => handlePersonaSelect('ate_maria')}
-            className="w-full text-left rounded-2xl overflow-hidden relative h-[180px] group hover:scale-[1.02] transition-transform"
+            className="w-full text-left rounded-2xl overflow-hidden relative h-[145px] group hover:scale-[1.02] transition-transform"
           >
-            {/* Background Image - left-aligned, show 75% of face */}
+            {/* Background Image - left-aligned, zoomed out to show more */}
             <div 
               className="absolute inset-0 bg-cover bg-left"
               style={{
                 backgroundImage: 'url(/avatars/ate-maria-portrait.webp)',
                 backgroundPosition: 'left center',
-                backgroundSize: '100%'
+                backgroundSize: '85%'
               }}
             />
             
             {/* Content */}
-            <div className="relative h-full flex flex-col justify-end p-5 bg-gradient-to-r from-transparent via-black/40 to-black/80">
-              <div className="inline-block self-start mb-2">
-                <div className="bg-[#D4AF37] text-black text-xs font-bold tracking-wider px-3 py-1 rounded-full">
+            <div className="relative h-full flex flex-col justify-end p-4 bg-gradient-to-r from-transparent via-black/40 to-black/80">
+              <div className="inline-block self-start mb-1.5">
+                <div className="bg-[#D4AF37] text-black text-[10px] font-bold tracking-wider px-2.5 py-1 rounded-full">
                   BEGINNER
                 </div>
               </div>
-              <h2 className="text-2xl font-bold mb-1">Ate Maria</h2>
-              <p className="text-xs text-gray-300 leading-relaxed">
+              <h2 className="text-xl font-bold mb-0.5">Ate Maria</h2>
+              <p className="text-[11px] text-gray-300 leading-snug">
                 For those who don't know any Tagalog. Start from zero with patient guidance.
               </p>
             </div>
@@ -81,27 +81,27 @@ export default function DashboardPage() {
           {/* Kuya Josh Card - HERITAGE */}
           <button
             onClick={() => handlePersonaSelect('kuya_josh')}
-            className="w-full text-left rounded-2xl overflow-hidden relative h-[180px] group hover:scale-[1.02] transition-transform"
+            className="w-full text-left rounded-2xl overflow-hidden relative h-[145px] group hover:scale-[1.02] transition-transform"
           >
-            {/* Background Image - left-aligned, show 75% of face */}
+            {/* Background Image - left-aligned, zoomed out to show more */}
             <div 
               className="absolute inset-0 bg-cover bg-left"
               style={{
                 backgroundImage: 'url(/avatars/kuya-josh-portrait.webp)',
                 backgroundPosition: 'left center',
-                backgroundSize: '100%'
+                backgroundSize: '85%'
               }}
             />
             
             {/* Content */}
-            <div className="relative h-full flex flex-col justify-end p-5 bg-gradient-to-r from-transparent via-black/40 to-black/80">
-              <div className="inline-block self-start mb-2">
-                <div className="bg-[#D4AF37] text-black text-xs font-bold tracking-wider px-3 py-1 rounded-full">
+            <div className="relative h-full flex flex-col justify-end p-4 bg-gradient-to-r from-transparent via-black/40 to-black/80">
+              <div className="inline-block self-start mb-1.5">
+                <div className="bg-[#D4AF37] text-black text-[10px] font-bold tracking-wider px-2.5 py-1 rounded-full">
                   HERITAGE
                 </div>
               </div>
-              <h2 className="text-2xl font-bold mb-1">Kuya Josh</h2>
-              <p className="text-xs text-gray-300 leading-relaxed">
+              <h2 className="text-xl font-bold mb-0.5">Kuya Josh</h2>
+              <p className="text-[11px] text-gray-300 leading-snug">
                 For those who understand some but can't speak. Practice naturally.
               </p>
             </div>
@@ -110,7 +110,7 @@ export default function DashboardPage() {
 
         {/* Recent Activity */}
         <div className="mb-8">
-          <h3 className="text-xs text-gray-500 uppercase tracking-wider mb-4">Recent Activity</h3>
+          <h3 className="text-xs text-gray-500 uppercase tracking-wider mb-3">Recent Activity</h3>
           <div className="bg-white/[0.03] rounded-2xl p-4 flex items-center justify-between">
             <div>
               <p className="font-medium mb-1">Continue Learning</p>
