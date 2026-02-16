@@ -5,14 +5,21 @@ import { useAuth } from '@/lib/auth-context';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useState, useRef } from 'react';
 
+interface AIResponse {
+  tagalog: string;
+  english: string;
+  hint: string;
+  examples: string[];
+  correction?: string;
+  note?: string;
+  tone: string;
+}
+
 interface Message {
   id: string;
   role: 'user' | 'assistant';
-  content: string;
-  tagalog?: string;
-  english?: string;
-  hint?: string;
-  examples?: string[];
+  content?: string; // For user messages
+  aiResponse?: AIResponse; // For AI messages
   timestamp: Date;
 }
 
@@ -31,12 +38,10 @@ function ChatPageContent() {
     ate_maria: {
       name: 'Ate Maria',
       avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=200&h=200&fit=crop',
-      greeting: "Kumusta! I'm Ate Maria. Let's practice Tagalog together!",
     },
     kuya_josh: {
       name: 'Kuya Josh',
       avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&h=200&fit=crop',
-      greeting: "Mabuhay! I'm Kuya Josh. Ready to learn some Tagalog?",
     },
   };
 
@@ -55,9 +60,9 @@ function ChatPageContent() {
   useEffect(() => {
     // Send initial greeting when chat loads
     if (messages.length === 0) {
-      handleSendMessage('', true); // Empty message triggers greeting
+      handleSendMessage('', true);
     }
-  }, []); // Only run once on mount
+  }, []);
 
   const handleSendMessage = async (text?: string, isInitial?: boolean) => {
     const messageText = text || inputValue.trim();
@@ -78,12 +83,11 @@ function ChatPageContent() {
     setIsTyping(true);
 
     try {
-      // Call real AI API
       const response = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          message: messageText || 'Hello',
+          message: messageText || '',
           persona,
         }),
       });
@@ -94,28 +98,39 @@ function ChatPageContent() {
         throw new Error(data.error || 'Failed to get response');
       }
 
-      // Add AI response
+      // Add AI response with full structure
       const aiMessage: Message = {
         id: (Date.now() + 1).toString(),
         role: 'assistant',
-        content: data.response,
+        aiResponse: data.response,
         timestamp: new Date(),
       };
 
       setMessages((prev) => [...prev, aiMessage]);
     } catch (error) {
       console.error('Error sending message:', error);
-      // Add error message
+      // Add error fallback
       const errorMessage: Message = {
         id: (Date.now() + 1).toString(),
         role: 'assistant',
-        content: 'Sorry, I encountered an error. Please try again.',
+        aiResponse: {
+          tagalog: 'Sandali lang, may problema ako.',
+          english: 'Give me a moment, having trouble.',
+          hint: "Sabihin: 'Sige' o 'Okay'",
+          examples: ['Sige', 'Okay'],
+          tone: 'warm',
+        },
         timestamp: new Date(),
       };
       setMessages((prev) => [...prev, errorMessage]);
     } finally {
       setIsTyping(false);
     }
+  };
+
+  const handleExampleClick = (example: string) => {
+    setInputValue(example);
+    handleSendMessage(example);
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -166,30 +181,71 @@ function ChatPageContent() {
               key={msg.id}
               className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
             >
-              <div
-                className={`max-w-[85%] rounded-2xl px-4 py-3 ${
-                  msg.role === 'user'
-                    ? 'bg-[#D4AF37] text-[#0a0a0f]'
-                    : 'bg-white/[0.08] text-white backdrop-blur-sm'
-                }`}
-              >
-                <p className="text-[15px] leading-relaxed whitespace-pre-wrap">
-                  {msg.content}
-                </p>
-                {msg.tagalog && (
-                  <div className="mt-3 pt-3 border-t border-white/10">
-                    <p className="text-sm font-medium">{msg.tagalog}</p>
-                    {msg.english && (
-                      <p className="text-xs text-white/40 mt-1">{msg.english}</p>
-                    )}
+              {msg.role === 'user' ? (
+                <div className="max-w-[85%] rounded-2xl px-4 py-3 bg-[#D4AF37] text-[#0a0a0f]">
+                  <p className="text-[15px] leading-relaxed">{msg.content}</p>
+                </div>
+              ) : (
+                <div className="max-w-[85%] space-y-3">
+                  {/* AI Response Card */}
+                  <div className="rounded-2xl px-4 py-3 bg-white/[0.08] backdrop-blur-sm text-white">
+                    {/* Tagalog (Primary) */}
+                    <p className="text-[17px] font-semibold leading-relaxed">
+                      {msg.aiResponse?.tagalog}
+                    </p>
+                    
+                    {/* English (Secondary) */}
+                    <p className="text-[12px] text-white/50 mt-1">
+                      {msg.aiResponse?.english}
+                    </p>
                   </div>
-                )}
-                {msg.hint && (
-                  <div className="mt-3 text-xs text-white/40">{msg.hint}</div>
-                )}
-              </div>
+
+                  {/* Hint Box */}
+                  {msg.aiResponse?.hint && (
+                    <div className="rounded-xl px-4 py-2 bg-[#D4AF37]/10 border border-[#D4AF37]/30">
+                      <p className="text-[13px] text-[#D4AF37] italic">
+                        {msg.aiResponse.hint}
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Example Buttons */}
+                  {msg.aiResponse?.examples && msg.aiResponse.examples.length > 0 && (
+                    <div className="flex flex-wrap gap-2">
+                      {msg.aiResponse.examples.map((example, i) => (
+                        <button
+                          key={i}
+                          onClick={() => handleExampleClick(example)}
+                          className="px-4 py-2 rounded-full bg-white/[0.06] hover:bg-white/[0.12] text-white/80 text-[14px] transition-colors"
+                        >
+                          {example}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Correction (if present) */}
+                  {msg.aiResponse?.correction && (
+                    <div className="rounded-xl px-4 py-2 bg-yellow-500/10 border border-yellow-500/30">
+                      <p className="text-[13px] text-yellow-200">
+                        {msg.aiResponse.correction}
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Cultural Note (if present) */}
+                  {msg.aiResponse?.note && (
+                    <div className="rounded-xl px-4 py-2 bg-green-500/10 border border-green-500/30">
+                      <p className="text-[13px] text-green-200">
+                        💡 {msg.aiResponse.note}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           ))}
+          
           {isTyping && (
             <div className="flex justify-start">
               <div className="bg-white/[0.08] backdrop-blur-sm rounded-2xl px-4 py-3">
