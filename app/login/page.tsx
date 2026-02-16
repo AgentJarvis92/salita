@@ -4,6 +4,17 @@ import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/lib/auth-context'
+import { z } from 'zod'
+
+const authSchema = z.object({
+  email: z.string()
+    .min(1, 'Email is required')
+    .email('Please enter a valid email address'),
+  password: z.string()
+    .min(8, 'Password must be at least 8 characters')
+    .regex(/[A-Z]/, 'Password must contain at least one uppercase letter')
+    .regex(/[0-9]/, 'Password must contain at least one number'),
+})
 
 export default function LoginPage() {
   const [email, setEmail] = useState('')
@@ -25,16 +36,25 @@ export default function LoginPage() {
     setLoading(true)
     setError('')
 
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    })
+    try {
+      const validated = authSchema.parse({ email, password })
 
-    if (error) {
-      setError(error.message)
+      const { error } = await supabase.auth.signInWithPassword({
+        email: validated.email,
+        password: validated.password,
+      })
+
+      if (error) {
+        setError('Email or password is incorrect')
+        setLoading(false)
+      } else {
+        router.push('/')
+      }
+    } catch (validationError: unknown) {
+      if (validationError instanceof z.ZodError) {
+        setError((validationError as z.ZodError).issues[0].message)
+      }
       setLoading(false)
-    } else {
-      router.push('/')
     }
   }
 
@@ -43,30 +63,48 @@ export default function LoginPage() {
     setLoading(true)
     setError('')
 
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
-    })
+    try {
+      const validated = authSchema.parse({ email, password })
 
-    if (error) {
-      setError(error.message)
+      const { error } = await supabase.auth.signUp({
+        email: validated.email,
+        password: validated.password,
+      })
+
+      if (error) {
+        setError('Unable to create account. Please try again.')
+        setLoading(false)
+      } else {
+        router.push('/')
+      }
+    } catch (validationError: unknown) {
+      if (validationError instanceof z.ZodError) {
+        setError((validationError as z.ZodError).issues[0].message)
+      }
       setLoading(false)
-    } else {
-      router.push('/')
     }
   }
 
   const handleGoogleLogin = async () => {
     setLoading(true)
+    setError('')
+
+    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL
+    if (!siteUrl) {
+      setError('Configuration error. Please contact support.')
+      setLoading(false)
+      return
+    }
+
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL || window.location.origin}/auth/callback`,
+        redirectTo: `${siteUrl}/auth/callback`,
       },
     })
 
     if (error) {
-      setError(error.message)
+      setError('Unable to sign in with Google. Please try again.')
       setLoading(false)
     }
   }
@@ -123,6 +161,7 @@ export default function LoginPage() {
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
+              autoComplete="email"
               className="mt-1 block w-full px-3 py-2 border border-zinc-300 dark:border-zinc-700 rounded-lg bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white"
             />
           </div>
@@ -137,6 +176,7 @@ export default function LoginPage() {
               required
               value={password}
               onChange={(e) => setPassword(e.target.value)}
+              autoComplete={isSignup ? 'new-password' : 'current-password'}
               className="mt-1 block w-full px-3 py-2 border border-zinc-300 dark:border-zinc-700 rounded-lg bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white"
             />
           </div>
