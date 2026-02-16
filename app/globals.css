@@ -26,8 +26,10 @@ body {
 }
 
 /* iOS safe area support */
-.safe-bottom {
-  padding-bottom: env(safe-area-inset-bottom);
+@supports (padding-bottom: env(safe-area-inset-bottom)) {
+  .pb-safe {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
 }
 
 /* Prevent viewport zoom on input focus (iOS) */

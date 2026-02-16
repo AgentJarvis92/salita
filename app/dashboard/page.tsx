@@ -49,66 +49,60 @@ export default function DashboardPage() {
 
         {/* AI Persona Cards */}
         <div className="space-y-4 mb-8">
-          {/* Ate Maria Card */}
+          {/* Ate Maria Card - BEGINNER */}
           <button
             onClick={() => handlePersonaSelect('ate_maria')}
-            className="w-full text-left rounded-2xl overflow-hidden relative h-[160px] group hover:scale-[1.02] transition-transform"
+            className="w-full text-left rounded-2xl overflow-hidden relative h-[180px] group hover:scale-[1.02] transition-transform"
           >
-            {/* Background Image - left-aligned, zoomed out */}
+            {/* Background Image - left-aligned, show 75% of face */}
             <div 
               className="absolute inset-0 bg-cover bg-left"
               style={{
                 backgroundImage: 'url(/avatars/ate-maria-portrait.webp)',
                 backgroundPosition: 'left center',
-                backgroundSize: '120%'
+                backgroundSize: '100%'
               }}
             />
             
-            {/* Gradient Overlay */}
-            <div className="absolute inset-0 bg-gradient-to-r from-black/20 via-black/60 to-black/90" />
-            
             {/* Content */}
-            <div className="relative h-full flex flex-col justify-end p-5">
+            <div className="relative h-full flex flex-col justify-end p-5 bg-gradient-to-r from-transparent via-black/40 to-black/80">
               <div className="inline-block self-start mb-2">
-                <div className="bg-[#D4AF37] text-black text-xs font-semibold tracking-wider px-3 py-1 rounded-full">
-                  LANGUAGE MENTOR
+                <div className="bg-[#D4AF37] text-black text-xs font-bold tracking-wider px-3 py-1 rounded-full">
+                  BEGINNER
                 </div>
               </div>
               <h2 className="text-2xl font-bold mb-1">Ate Maria</h2>
-              <p className="text-sm text-gray-300">
-                Patient and warm. Specializes in Tagalog basics and cultural nuances.
+              <p className="text-xs text-gray-300 leading-relaxed">
+                For those who don't know any Tagalog. Start from zero with patient guidance.
               </p>
             </div>
           </button>
 
-          {/* Kuya Josh Card */}
+          {/* Kuya Josh Card - HERITAGE */}
           <button
             onClick={() => handlePersonaSelect('kuya_josh')}
-            className="w-full text-left rounded-2xl overflow-hidden relative h-[160px] group hover:scale-[1.02] transition-transform"
+            className="w-full text-left rounded-2xl overflow-hidden relative h-[180px] group hover:scale-[1.02] transition-transform"
           >
-            {/* Background Image - left-aligned, zoomed out */}
+            {/* Background Image - left-aligned, show 75% of face */}
             <div 
               className="absolute inset-0 bg-cover bg-left"
               style={{
                 backgroundImage: 'url(/avatars/kuya-josh-portrait.webp)',
                 backgroundPosition: 'left center',
-                backgroundSize: '120%'
+                backgroundSize: '100%'
               }}
             />
             
-            {/* Gradient Overlay */}
-            <div className="absolute inset-0 bg-gradient-to-r from-black/20 via-black/60 to-black/90" />
-            
             {/* Content */}
-            <div className="relative h-full flex flex-col justify-end p-5">
+            <div className="relative h-full flex flex-col justify-end p-5 bg-gradient-to-r from-transparent via-black/40 to-black/80">
               <div className="inline-block self-start mb-2">
-                <div className="bg-[#D4AF37] text-black text-xs font-semibold tracking-wider px-3 py-1 rounded-full">
-                  CONVERSATIONAL GUIDE
+                <div className="bg-[#D4AF37] text-black text-xs font-bold tracking-wider px-3 py-1 rounded-full">
+                  HERITAGE
                 </div>
               </div>
               <h2 className="text-2xl font-bold mb-1">Kuya Josh</h2>
-              <p className="text-sm text-gray-300">
-                Casual and relatable. Helps with everyday slang and daily life topics.
+              <p className="text-xs text-gray-300 leading-relaxed">
+                For those who understand some but can't speak. Practice naturally.
               </p>
             </div>
           </button>

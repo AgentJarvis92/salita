@@ -35,12 +35,12 @@ function ChatPageContent() {
     ate_maria: {
       name: 'Ate Maria',
       avatar: '/avatars/ate-maria-avatar.webp',
-      subtitle: 'Language Mentor',
+      subtitle: 'Beginner Mode',
     },
     kuya_josh: {
       name: 'Kuya Josh',
       avatar: '/avatars/kuya-josh-avatar.webp',
-      subtitle: 'Conversational Guide',
+      subtitle: 'Heritage Mode',
     },
   };
 
@@ -142,10 +142,10 @@ function ChatPageContent() {
   }
 
   return (
-    <div className="min-h-screen bg-[#0a0a0f] flex flex-col max-h-screen overflow-hidden">
+    <div className="h-screen bg-[#0a0a0f] flex flex-col overflow-hidden">
       {/* Header */}
-      <div className="flex-shrink-0 bg-[#0a0a0f]/80 backdrop-blur-sm border-b border-white/5">
-        <div className="max-w-2xl mx-auto px-4 py-4 flex items-center gap-3">
+      <div className="flex-shrink-0 bg-[#0a0a0f]/95 backdrop-blur-sm border-b border-white/5">
+        <div className="max-w-2xl mx-auto px-4 py-3 flex items-center gap-3">
           <button
             onClick={() => router.push('/dashboard')}
             className="text-white/40 hover:text-white/60 transition-colors"
@@ -167,8 +167,8 @@ function ChatPageContent() {
       </div>
 
       {/* Messages - Scrollable Area */}
-      <div className="flex-1 overflow-y-auto px-4 py-6">
-        <div className="max-w-2xl mx-auto space-y-4 pb-4">
+      <div className="flex-1 overflow-y-auto">
+        <div className="max-w-2xl mx-auto px-4 py-6 space-y-4">
           {messages.map((msg) => (
             <div
               key={msg.id}
@@ -183,14 +183,14 @@ function ChatPageContent() {
                   {/* AI Response Card */}
                   <div className="rounded-2xl px-4 py-3 bg-white/[0.08] backdrop-blur-sm text-white">
                     {/* Tagalog Text */}
-                    <p className="text-[17px] font-semibold leading-relaxed">
+                    <p className="text-[16px] leading-relaxed">
                       {msg.aiResponse?.tagalog}
                     </p>
                   </div>
 
                   {/* Hint Box (Always shown) */}
                   {msg.aiResponse?.hint && (
-                    <div className="rounded-xl px-4 py-3 bg-[#D4AF37] text-[#0a0a0f]">
+                    <div className="rounded-2xl px-4 py-3 bg-[#D4AF37] text-[#0a0a0f]">
                       <p className="text-[13px] leading-relaxed">
                         {msg.aiResponse.hint}
                       </p>
@@ -199,7 +199,7 @@ function ChatPageContent() {
 
                   {/* Correction Box (Only if not "None") */}
                   {msg.aiResponse?.correction && msg.aiResponse.correction !== 'None' && (
-                    <div className="rounded-xl px-4 py-3 bg-yellow-500/10 border border-yellow-500/30">
+                    <div className="rounded-2xl px-4 py-3 bg-yellow-500/10 border border-yellow-500/30">
                       <p className="text-[13px] text-yellow-200 leading-relaxed">
                         ✏️ {msg.aiResponse.correction}
                       </p>
@@ -226,8 +226,8 @@ function ChatPageContent() {
       </div>
 
       {/* Input - Fixed at Bottom */}
-      <div className="flex-shrink-0 bg-[#0a0a0f]/80 backdrop-blur-sm border-t border-white/5">
-        <div className="max-w-2xl mx-auto px-4 py-4 safe-bottom">
+      <div className="flex-shrink-0 bg-[#0a0a0f]/95 backdrop-blur-sm border-t border-white/5 pb-safe">
+        <div className="max-w-2xl mx-auto px-4 py-3">
           <div className="flex items-end gap-2">
             <div className="flex-1 relative">
               <textarea
@@ -235,9 +235,8 @@ function ChatPageContent() {
                 onChange={(e) => setInputValue(e.target.value)}
                 onKeyPress={handleKeyPress}
                 placeholder="Message in English or Tagalog"
-                className="w-full bg-white/[0.08] text-white rounded-3xl px-5 py-3 pr-12 resize-none focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/50 placeholder-white/30 backdrop-blur-sm"
+                className="w-full bg-white/[0.08] text-white rounded-3xl px-5 py-3 resize-none focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/50 placeholder-white/30 backdrop-blur-sm max-h-[120px]"
                 rows={1}
-                style={{ maxHeight: '120px' }}
               />
             </div>
             <button
