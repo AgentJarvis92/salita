@@ -52,29 +52,29 @@ export default function DashboardPage() {
           {/* Ate Maria Card */}
           <button
             onClick={() => handlePersonaSelect('ate_maria')}
-            className="w-full text-left rounded-2xl overflow-hidden relative h-[200px] group hover:scale-[1.02] transition-transform"
+            className="w-full text-left rounded-2xl overflow-hidden relative h-[160px] group hover:scale-[1.02] transition-transform"
           >
-            {/* Background Image - zoomed out more, centered */}
+            {/* Background Image - left-aligned, zoomed out */}
             <div 
-              className="absolute inset-0 bg-cover bg-center"
+              className="absolute inset-0 bg-cover bg-left"
               style={{
                 backgroundImage: 'url(/avatars/ate-maria-portrait.webp)',
-                backgroundPosition: 'center 35%',
-                backgroundSize: '140%'
+                backgroundPosition: 'left center',
+                backgroundSize: '120%'
               }}
             />
             
             {/* Gradient Overlay */}
-            <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent" />
+            <div className="absolute inset-0 bg-gradient-to-r from-black/20 via-black/60 to-black/90" />
             
             {/* Content */}
-            <div className="relative h-full flex flex-col justify-end p-6">
+            <div className="relative h-full flex flex-col justify-end p-5">
               <div className="inline-block self-start mb-2">
                 <div className="bg-[#D4AF37] text-black text-xs font-semibold tracking-wider px-3 py-1 rounded-full">
                   LANGUAGE MENTOR
                 </div>
               </div>
-              <h2 className="text-2xl font-bold mb-2">Ate Maria</h2>
+              <h2 className="text-2xl font-bold mb-1">Ate Maria</h2>
               <p className="text-sm text-gray-300">
                 Patient and warm. Specializes in Tagalog basics and cultural nuances.
               </p>
@@ -84,29 +84,29 @@ export default function DashboardPage() {
           {/* Kuya Josh Card */}
           <button
             onClick={() => handlePersonaSelect('kuya_josh')}
-            className="w-full text-left rounded-2xl overflow-hidden relative h-[200px] group hover:scale-[1.02] transition-transform"
+            className="w-full text-left rounded-2xl overflow-hidden relative h-[160px] group hover:scale-[1.02] transition-transform"
           >
-            {/* Background Image - zoomed out more, centered */}
+            {/* Background Image - left-aligned, zoomed out */}
             <div 
-              className="absolute inset-0 bg-cover bg-center"
+              className="absolute inset-0 bg-cover bg-left"
               style={{
                 backgroundImage: 'url(/avatars/kuya-josh-portrait.webp)',
-                backgroundPosition: 'center 35%',
-                backgroundSize: '140%'
+                backgroundPosition: 'left center',
+                backgroundSize: '120%'
               }}
             />
             
             {/* Gradient Overlay */}
-            <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent" />
+            <div className="absolute inset-0 bg-gradient-to-r from-black/20 via-black/60 to-black/90" />
             
             {/* Content */}
-            <div className="relative h-full flex flex-col justify-end p-6">
+            <div className="relative h-full flex flex-col justify-end p-5">
               <div className="inline-block self-start mb-2">
                 <div className="bg-[#D4AF37] text-black text-xs font-semibold tracking-wider px-3 py-1 rounded-full">
                   CONVERSATIONAL GUIDE
                 </div>
               </div>
-              <h2 className="text-2xl font-bold mb-2">Kuya Josh</h2>
+              <h2 className="text-2xl font-bold mb-1">Kuya Josh</h2>
               <p className="text-sm text-gray-300">
                 Casual and relatable. Helps with everyday slang and daily life topics.
               </p>
