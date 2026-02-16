@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/lib/auth-context'
+import Link from 'next/link'
 import { z } from 'zod'
 
 const authSchema = z.object({
@@ -21,7 +22,6 @@ export default function LoginPage() {
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
-  const [isSignup, setIsSignup] = useState(false)
   const router = useRouter()
   const { user } = useAuth()
 
@@ -46,33 +46,6 @@ export default function LoginPage() {
 
       if (error) {
         setError('Email or password is incorrect')
-        setLoading(false)
-      } else {
-        router.push('/')
-      }
-    } catch (validationError: unknown) {
-      if (validationError instanceof z.ZodError) {
-        setError((validationError as z.ZodError).issues[0].message)
-      }
-      setLoading(false)
-    }
-  }
-
-  const handleEmailSignup = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setLoading(true)
-    setError('')
-
-    try {
-      const validated = authSchema.parse({ email, password })
-
-      const { error } = await supabase.auth.signUp({
-        email: validated.email,
-        password: validated.password,
-      })
-
-      if (error) {
-        setError('Unable to create account. Please try again.')
         setLoading(false)
       } else {
         router.push('/')
@@ -130,7 +103,7 @@ export default function LoginPage() {
         <button
           onClick={handleGoogleLogin}
           disabled={loading}
-          className="w-full flex items-center justify-center gap-3 px-4 py-3 border border-zinc-300 dark:border-zinc-700 rounded-lg hover:bg-zinc-50 dark:hover:bg-zinc-800 disabled:opacity-50"
+          className="w-full flex items-center justify-center gap-3 px-4 py-3 border border-zinc-300 dark:border-zinc-700 rounded-lg hover:bg-zinc-50 dark:hover:bg-zinc-800 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           <svg className="w-5 h-5" viewBox="0 0 24 24">
             <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
@@ -150,7 +123,7 @@ export default function LoginPage() {
           </div>
         </div>
 
-        <form onSubmit={isSignup ? handleEmailSignup : handleEmailLogin} className="space-y-4">
+        <form onSubmit={handleEmailLogin} className="space-y-4">
           <div>
             <label htmlFor="email" className="block text-sm font-medium text-zinc-700 dark:text-zinc-300">
               Email
@@ -162,7 +135,8 @@ export default function LoginPage() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               autoComplete="email"
-              className="mt-1 block w-full px-3 py-2 border border-zinc-300 dark:border-zinc-700 rounded-lg bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white"
+              disabled={loading}
+              className="mt-1 block w-full px-3 py-2 border border-zinc-300 dark:border-zinc-700 rounded-lg bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
             />
           </div>
 
@@ -176,30 +150,28 @@ export default function LoginPage() {
               required
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              autoComplete={isSignup ? 'new-password' : 'current-password'}
-              className="mt-1 block w-full px-3 py-2 border border-zinc-300 dark:border-zinc-700 rounded-lg bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white"
+              autoComplete="current-password"
+              disabled={loading}
+              className="mt-1 block w-full px-3 py-2 border border-zinc-300 dark:border-zinc-700 rounded-lg bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
             />
           </div>
 
           <button
             type="submit"
             disabled={loading}
-            className="w-full px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
+            className="w-full px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed font-medium"
           >
-            {loading ? 'Loading...' : isSignup ? 'Sign up' : 'Sign in'}
+            {loading ? 'Signing in...' : 'Sign in'}
           </button>
 
           <div className="text-center text-sm">
-            <button
-              type="button"
-              onClick={() => {
-                setIsSignup(!isSignup)
-                setError('')
-              }}
-              className="text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
+            <span className="text-zinc-600 dark:text-zinc-400">Don't have an account? </span>
+            <Link 
+              href="/auth/signup" 
+              className="text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 font-medium"
             >
-              {isSignup ? 'Already have an account? Sign in' : "Don't have an account? Sign up"}
-            </button>
+              Sign up
+            </Link>
           </div>
         </form>
       </div>
