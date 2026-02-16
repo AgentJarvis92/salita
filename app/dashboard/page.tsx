@@ -54,12 +54,13 @@ export default function DashboardPage() {
             onClick={() => handlePersonaSelect('ate_maria')}
             className="w-full text-left rounded-2xl overflow-hidden relative h-[200px] group hover:scale-[1.02] transition-transform"
           >
-            {/* Background Image */}
+            {/* Background Image - zoomed out more, centered */}
             <div 
               className="absolute inset-0 bg-cover bg-center"
               style={{
                 backgroundImage: 'url(/avatars/ate-maria-portrait.webp)',
-                backgroundPosition: 'center 20%'
+                backgroundPosition: 'center 35%',
+                backgroundSize: '140%'
               }}
             />
             
@@ -68,8 +69,10 @@ export default function DashboardPage() {
             
             {/* Content */}
             <div className="relative h-full flex flex-col justify-end p-6">
-              <div className="text-xs text-[#D4AF37] font-semibold tracking-wider mb-1">
-                LANGUAGE MENTOR
+              <div className="inline-block self-start mb-2">
+                <div className="bg-[#D4AF37] text-black text-xs font-semibold tracking-wider px-3 py-1 rounded-full">
+                  LANGUAGE MENTOR
+                </div>
               </div>
               <h2 className="text-2xl font-bold mb-2">Ate Maria</h2>
               <p className="text-sm text-gray-300">
@@ -83,12 +86,13 @@ export default function DashboardPage() {
             onClick={() => handlePersonaSelect('kuya_josh')}
             className="w-full text-left rounded-2xl overflow-hidden relative h-[200px] group hover:scale-[1.02] transition-transform"
           >
-            {/* Background Image */}
+            {/* Background Image - zoomed out more, centered */}
             <div 
               className="absolute inset-0 bg-cover bg-center"
               style={{
                 backgroundImage: 'url(/avatars/kuya-josh-portrait.webp)',
-                backgroundPosition: 'center 20%'
+                backgroundPosition: 'center 35%',
+                backgroundSize: '140%'
               }}
             />
             
@@ -97,8 +101,10 @@ export default function DashboardPage() {
             
             {/* Content */}
             <div className="relative h-full flex flex-col justify-end p-6">
-              <div className="text-xs text-[#D4AF37] font-semibold tracking-wider mb-1">
-                CONVERSATIONAL GUIDE
+              <div className="inline-block self-start mb-2">
+                <div className="bg-[#D4AF37] text-black text-xs font-semibold tracking-wider px-3 py-1 rounded-full">
+                  CONVERSATIONAL GUIDE
+                </div>
               </div>
               <h2 className="text-2xl font-bold mb-2">Kuya Josh</h2>
               <p className="text-sm text-gray-300">
