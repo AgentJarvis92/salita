@@ -188,8 +188,11 @@ function ChatPageContent() {
                     </p>
                   </div>
 
-                  {/* Hint Box (Always shown) */}
-                  {msg.aiResponse?.hint && (
+                  {/* Hint Box (Conditional - only when valid hint exists) */}
+                  {msg.aiResponse?.hint && 
+                   typeof msg.aiResponse.hint === 'string' && 
+                   msg.aiResponse.hint.trim() !== '' && 
+                   msg.aiResponse.hint !== 'None' && (
                     <div className="rounded-2xl px-4 py-3 bg-[#D4AF37] text-[#0a0a0f]">
                       <p className="text-[13px] leading-relaxed">
                         {msg.aiResponse.hint}

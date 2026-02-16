@@ -54,18 +54,26 @@ export default function DashboardPage() {
             onClick={() => handlePersonaSelect('ate_maria')}
             className="w-full text-left rounded-2xl overflow-hidden relative h-[145px] group hover:scale-[1.02] transition-transform"
           >
-            {/* Background Image - cover entire box, left-aligned */}
+            {/* Background Image - positioned to show eyes clearly */}
             <div 
               className="absolute inset-0 bg-cover"
               style={{
                 backgroundImage: 'url(/avatars/ate-maria-portrait.webp)',
-                backgroundPosition: 'left center',
+                backgroundPosition: '70% 35%',
                 backgroundSize: 'cover'
               }}
             />
             
+            {/* Gradient Overlay - lighter, only dims where text sits */}
+            <div 
+              className="absolute inset-0"
+              style={{
+                background: 'linear-gradient(90deg, rgba(0,0,0,0.65) 0%, rgba(0,0,0,0.35) 55%, rgba(0,0,0,0.00) 100%)'
+              }}
+            />
+            
             {/* Content */}
-            <div className="relative h-full flex flex-col justify-end p-4 bg-gradient-to-r from-transparent via-black/40 to-black/80">
+            <div className="relative h-full flex flex-col justify-end p-4">
               <div className="inline-block self-start mb-1.5">
                 <div className="bg-[#D4AF37] text-black text-[10px] font-bold tracking-wider px-2.5 py-1 rounded-full">
                   BEGINNER
@@ -83,18 +91,26 @@ export default function DashboardPage() {
             onClick={() => handlePersonaSelect('kuya_josh')}
             className="w-full text-left rounded-2xl overflow-hidden relative h-[145px] group hover:scale-[1.02] transition-transform"
           >
-            {/* Background Image - cover entire box, left-aligned */}
+            {/* Background Image - positioned to show eyes clearly */}
             <div 
               className="absolute inset-0 bg-cover"
               style={{
                 backgroundImage: 'url(/avatars/kuya-josh-portrait.webp)',
-                backgroundPosition: 'left center',
+                backgroundPosition: '60% 40%',
                 backgroundSize: 'cover'
               }}
             />
             
+            {/* Gradient Overlay - lighter, only dims where text sits */}
+            <div 
+              className="absolute inset-0"
+              style={{
+                background: 'linear-gradient(90deg, rgba(0,0,0,0.65) 0%, rgba(0,0,0,0.35) 55%, rgba(0,0,0,0.00) 100%)'
+              }}
+            />
+            
             {/* Content */}
-            <div className="relative h-full flex flex-col justify-end p-4 bg-gradient-to-r from-transparent via-black/40 to-black/80">
+            <div className="relative h-full flex flex-col justify-end p-4">
               <div className="inline-block self-start mb-1.5">
                 <div className="bg-[#D4AF37] text-black text-[10px] font-bold tracking-wider px-2.5 py-1 rounded-full">
                   HERITAGE
