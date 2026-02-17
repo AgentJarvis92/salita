@@ -1,10 +1,10 @@
 'use client';
 
-import { Suspense } from 'react';
 import { useAuth } from '@/lib/auth-context';
 import { useVoice } from '@/lib/voice-context';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import { useEffect, useState, useRef } from 'react';
+import { supabase } from '@/lib/supabase';
 import MicButton from '@/components/voice/MicButton';
 import VoiceToggle from '@/components/voice/VoiceToggle';
 import ChatBubble from '@/components/chat/ChatBubble';
@@ -29,9 +29,9 @@ function ChatPageContent() {
   const { user, loading } = useAuth();
   const { voiceEnabled } = useVoice();
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const persona = searchParams.get('persona') || 'ate_maria';
   
+  const [persona, setPersona] = useState<string>('ate_maria');
+  const [personaLoaded, setPersonaLoaded] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputValue, setInputValue] = useState('');
   const [isTyping, setIsTyping] = useState(false);
@@ -58,6 +58,28 @@ function ChatPageContent() {
   useEffect(() => {
     if (!loading && !user) {
       router.push('/login');
+    }
+  }, [user, loading, router]);
+
+  // Load persona from profile DB
+  useEffect(() => {
+    async function loadPersona() {
+      if (!user) return;
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('selected_tutor')
+        .eq('user_id', user.id)
+        .single();
+      
+      if (!profile?.selected_tutor) {
+        router.push('/dashboard');
+        return;
+      }
+      setPersona(profile.selected_tutor);
+      setPersonaLoaded(true);
+    }
+    if (!loading && user) {
+      loadPersona();
     }
   }, [user, loading, router]);
 
@@ -110,12 +132,12 @@ function ChatPageContent() {
     loadHistory();
   }, []);
 
-  // Send initial greeting only if no history exists
+  // Send initial greeting only if no history exists and persona is loaded
   useEffect(() => {
-    if (historyLoaded && messages.length === 0) {
+    if (personaLoaded && historyLoaded && messages.length === 0) {
       handleSendMessage('', true);
     }
-  }, [historyLoaded]);
+  }, [personaLoaded, historyLoaded]);
 
   // Auto-play greeting via TTS when first AI message arrives
   useEffect(() => {
@@ -346,13 +368,5 @@ function ChatPageContent() {
 }
 
 export default function ChatPage() {
-  return (
-    <Suspense fallback={
-      <div className="min-h-screen bg-[#0a0a0f] flex items-center justify-center">
-        <div className="text-white/60">Loading chat...</div>
-      </div>
-    }>
-      <ChatPageContent />
-    </Suspense>
-  );
+  return <ChatPageContent />;
 }

@@ -11,6 +11,7 @@ CREATE TABLE IF NOT EXISTS profiles (
   skill_level TEXT CHECK (skill_level IN ('beginner', 'understand_cant_speak', 'conversational')),
   goal TEXT CHECK (goal IN ('family', 'culture', 'travel', 'relationship', 'other')),
   selected_tutor TEXT CHECK (selected_tutor IN ('ate_maria', 'kuya_josh')),
+  selected_tutor TEXT CHECK (selected_tutor IN ('ate_maria', 'kuya_josh')),
   created_at TIMESTAMP DEFAULT NOW(),
   updated_at TIMESTAMP DEFAULT NOW(),
   UNIQUE(user_id)
