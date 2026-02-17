@@ -1,5 +1,28 @@
 # Salita System Prompt Versions
 
+## v11.0 - Structured Curriculum Progression (2026-02-16)
+- Complete rewrite of beginner mode for strict curriculum control
+- Fixed 5-level curriculum ladder (no jumping): Core Words → Identity → Simple Statements → Simple Preference → Simple Questions
+- ONE concept per turn, strictly enforced
+- Mandatory 3-line message format: context line, "Sabihin mo:", Meaning line
+- Progression gating: user must repeat correctly before advancing
+- No emojis (zero tolerance)
+- Max 5 Tagalog words per phrase
+- Short messages only (2-4 lines max)
+- Prohibited: complex verbs, long sentences, topic jumping
+- Heritage Mode (Kuya Josh) unchanged
+
+## v9.0 - Conversational Micro-Flow (2026-02-16)
+- Core shift: Teach → Use → Reinforce → Continue naturally (not drill-based)
+- Mandatory 4-step micro-conversation pattern for every new word
+- 40% minimum conversational ratio (real dialogue, not instruction)
+- Tiny real-world scenarios after every word introduction
+- Reduced emoji (max 1 per 8 messages)
+- Stricter difficulty rules (1-2 words only, 1 sentence English max)
+- Stage progression preserved: Stage 1 (single words) → Stage 2 (2-word phrases) → Stage 3 (micro exchanges)
+- Meaning box (hint field) always provided
+- Heritage Mode (Kuya Josh) unchanged
+
 ## v8.0 - Beginner Stabilized (2026-02-16)
 - Rewrote BEGINNER_SYSTEM_PROMPT for gradual progression
 - 3-stage invisible progression: Stage 1 (single words) → Stage 2 (2-word phrases) → Stage 3 (micro exchanges)
