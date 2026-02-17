@@ -30,7 +30,7 @@ const nextConfig: NextConfig = {
               "style-src 'self' 'unsafe-inline'",
               "img-src 'self' data: https:",
               "font-src 'self' data:",
-              "connect-src 'self' https://wbcfrfpndsczqtuilfsl.supabase.co https://accounts.google.com",
+              "connect-src 'self' https://wbcfrfpndsczqtuilfsl.supabase.co https://accounts.google.com https://api.openai.com https://*.anam.ai wss://*.anam.ai",
               "frame-src https://accounts.google.com",
               "object-src 'none'",
               "base-uri 'self'",
