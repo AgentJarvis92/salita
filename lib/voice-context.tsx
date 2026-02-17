@@ -31,7 +31,8 @@ const VoiceContext = createContext<VoiceContextType>({
 })
 
 export function VoiceProvider({ children }: { children: ReactNode }) {
-  const [voiceEnabled, setVoiceEnabled] = useState(false)
+  // Phase 7: Voice defaults ON per product direction (voice-first)
+  const [voiceEnabled, setVoiceEnabled] = useState(true)
   const [isRecording, setIsRecording] = useState(false)
   const [micPermission, setMicPermission] = useState<'prompt' | 'granted' | 'denied'>('prompt')
   const [userId, setUserId] = useState<string | null>(null)
@@ -46,8 +47,11 @@ export function VoiceProvider({ children }: { children: ReactNode }) {
   // Load persisted state from DB (primary) with localStorage fallback
   useEffect(() => {
     // Immediate: load from localStorage for fast UI
+    // Default is true (voice-first), only override if explicitly set to false
     const stored = localStorage.getItem('salita-voice-enabled')
-    if (stored === 'true') setVoiceEnabled(true)
+    if (stored === 'false') setVoiceEnabled(false)
+    else if (stored === 'true') setVoiceEnabled(true)
+    // if null (first visit) — stays true (default)
 
     // Then sync from DB if logged in
     if (!userId) return
