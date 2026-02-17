@@ -2,19 +2,15 @@
 
 /**
  * /start — Phase 7: Voice-First Onboarding
- * Refinement patch 2026-02-17:
- *   - 4-line warm intro with paced pauses
- *   - Transcript appears AFTER voice completes (fadeInUp)
- *   - TTS segment shaping (short chunks, 200ms gaps)
- *   - Staggered Meaning / Sabihin mo cards
- *   - Avatar breathing animation (scale 1→1.01, 6s)
- *   - Mic glow replaces pulse ring
- *   - Transcript strip floats 60px above bottom chrome
- *   - "See? That felt natural." bridge after win1
+ * Anam integration: live video avatar (Mia) replaces static portrait.
+ * anamClient.talk() drives all speech — locked script, no LLM.
+ * Mic is muted during onboarding; user responds via Web Speech API / text.
  * Script: LOCKED 2026-02-17 — no paraphrasing, no GPT
  */
 
 import { useState, useRef, useEffect, useCallback } from 'react'
+import { createClient, AnamEvent } from '@anam-ai/js-sdk'
+import type AnamClient from '@anam-ai/js-sdk/dist/main/AnamClient'
 import { supabase } from '@/lib/supabase'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
@@ -39,21 +35,8 @@ const SCRIPT = {
   heritagePost:  "Good. I won't baby you. But I'll catch you when you need it.",
 } as const
 
-// ─── TTS SHAPING ─────────────────────────────────────────────────────────────
-// Maps display text → spoken segments (short chunks with 200ms gaps).
-// Transcript always shows full display text — only TTS is shaped.
-const TTS_SEGMENTS: Partial<Record<string, string[]>> = {
-  [SCRIPT.win1Correct]:   ["Perfect.", "See? You're already speaking Tagalog."],
-  [SCRIPT.win1Incorrect]: ["Almost.", "Say it like this.", "Ako si, then your name."],
-  [SCRIPT.win2Correct]:   ["Ang galing.", "That means I'm good."],
-  [SCRIPT.win2Incorrect]: ["Close.", "Try this.", "Mabuti ako."],
-  [SCRIPT.transition1]:   ["That's it.", "You just had your first real conversation in Tagalog."],
-  [SCRIPT.beginnerPost]:  ["Okay.", "We'll build this slowly and naturally.", "You won't feel lost."],
-  [SCRIPT.heritagePost]:  ["Good.", "I won't baby you.", "But I'll catch you when you need it."],
-}
-
 type Step =
-  | 'init' | 'intro'
+  | 'init' | 'connecting' | 'intro'
   | 'win1-prompt' | 'win1-listen' | 'win1-result'
   | 'win2-prompt' | 'win2-listen' | 'win2-result'
   | 'transition' | 'mode-select' | 'post-select' | 'account-gate'
@@ -71,11 +54,12 @@ export default function StartPage() {
   const router = useRouter()
 
   const [step, setStep]                     = useState<Step>('init')
-  const [needsGesture, setNeedsGesture]     = useState(false)
   const [currentLine, setCurrentLine]       = useState('')
   const [textInput, setTextInput]           = useState('')
   const [isListening, setIsListening]       = useState(false)
-  const [isAudioLoading, setIsAudioLoading] = useState(false)
+  const [isSpeaking, setIsSpeaking]         = useState(false)
+  const [anamReady, setAnamReady]           = useState(false)
+  const [connectError, setConnectError]     = useState('')
   const [win1Attempts, setWin1Attempts]     = useState(0)
   const [win2Attempts, setWin2Attempts]     = useState(0)
   const [micError, setMicError]             = useState('')
@@ -84,133 +68,131 @@ export default function StartPage() {
   const [signupError, setSignupError]       = useState('')
   const [signupLoading, setSignupLoading]   = useState(false)
 
-  const audioRef     = useRef<HTMLAudioElement | null>(null)
-  const pendingRef   = useRef<{ audio: HTMLAudioElement; url: string; resolve: () => void } | null>(null)
+  const anamRef      = useRef<AnamClient | null>(null)
   const cancelledRef = useRef(false)
   const flowStarted  = useRef(false)
   const inputRef     = useRef<HTMLInputElement>(null)
+  const videoRef     = useRef<HTMLVideoElement>(null)
 
-  // ─── AUDIO — single segment ────────────────────────────────────────────────
+  // ─── ANAM INIT ─────────────────────────────────────────────────────────────
 
-  const stopAudio = useCallback(() => {
-    if (audioRef.current) {
-      audioRef.current.pause()
-      audioRef.current.src = ''
-      audioRef.current = null
+  const initAnam = useCallback(async () => {
+    try {
+      setStep('connecting')
+      const res = await fetch('/api/anam/session-token', { method: 'POST' })
+      if (!res.ok) throw new Error('Session token failed')
+      const { sessionToken } = await res.json()
+
+      const client = createClient(sessionToken)
+      anamRef.current = client
+
+      // SESSION_READY fires when the avatar is live and ready
+      await new Promise<void>((resolve, reject) => {
+        const timeout = setTimeout(() => reject(new Error('Anam connection timeout')), 20000)
+        client.addListener(AnamEvent.SESSION_READY, () => {
+          clearTimeout(timeout)
+          setAnamReady(true)
+          resolve()
+        })
+        client.addListener(AnamEvent.CONNECTION_CLOSED, () => {
+          clearTimeout(timeout)
+          reject(new Error('Connection closed'))
+        })
+        // Stream to the video element
+        if (videoRef.current) {
+          client.streamToVideoElement('anam-video').catch(reject)
+        } else {
+          reject(new Error('Video element not found'))
+        }
+      })
+    } catch (err) {
+      console.error('[ANAM INIT]', err)
+      setConnectError('Could not connect avatar. Please refresh.')
+      setStep('init')
     }
   }, [])
 
-  const playSegment = useCallback(async (text: string): Promise<void> => {
-    if (cancelledRef.current) return
-    stopAudio()
-    try {
-      setIsAudioLoading(true)
-      const res = await fetch('/api/speech/onboarding-synthesize', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text }),
-      })
-      setIsAudioLoading(false)
-      if (!res.ok || cancelledRef.current) return
-
-      const blob  = await res.blob()
-      const url   = URL.createObjectURL(blob)
-      const audio = new Audio(url)
-      audioRef.current = audio
-
-      await new Promise<void>((resolve) => {
-        const cleanup = () => {
-          URL.revokeObjectURL(url)
-          if (audioRef.current === audio) audioRef.current = null
-        }
-        audio.onended = () => { cleanup(); resolve() }
-        audio.onerror = () => { cleanup(); resolve() }
-        audio.play().catch((err) => {
-          if (err.name === 'NotAllowedError') {
-            pendingRef.current = { audio, url, resolve }
-            setNeedsGesture(true)
-          } else {
-            cleanup(); resolve()
-          }
-        })
-      })
-    } catch { setIsAudioLoading(false) }
-  }, [stopAudio])
-
-  // ─── AUDIO — shaped (segments + 200ms gaps) ────────────────────────────────
-
-  const playLine = useCallback(async (text: string): Promise<void> => {
-    const segments = TTS_SEGMENTS[text]
-    if (segments) {
-      for (let i = 0; i < segments.length; i++) {
-        if (cancelledRef.current) return
-        if (i > 0) await sleep(200)   // 200ms gap between segments
-        await playSegment(segments[i])
-      }
-    } else {
-      await playSegment(text)
-    }
-  }, [playSegment])
-
-  const handleGestureUnlock = useCallback(() => {
-    setNeedsGesture(false)
-    if (pendingRef.current) {
-      const { audio, resolve } = pendingRef.current
-      pendingRef.current = null
-      audioRef.current = audio
-      audio.play()
-        .then(() => {
-          audio.onended = () => { if (audioRef.current === audio) audioRef.current = null; resolve() }
-          audio.onerror = () => { if (audioRef.current === audio) audioRef.current = null; resolve() }
-        })
-        .catch(() => resolve())
-    } else if (!flowStarted.current) {
-      startFlow()
+  useEffect(() => {
+    initAnam()
+    return () => {
+      cancelledRef.current = true
+      anamRef.current?.stopStreaming().catch(() => {})
     }
   }, []) // eslint-disable-line
 
+  // ─── ANAM TALK ─────────────────────────────────────────────────────────────
+  // Calls anamClient.talk() and awaits endOfSpeech via MESSAGE_STREAM_EVENT_RECEIVED.
+
+  const anamTalk = useCallback(async (text: string): Promise<void> => {
+    if (cancelledRef.current || !anamRef.current) return
+    setIsSpeaking(true)
+
+    await new Promise<void>((resolve) => {
+      const client = anamRef.current!
+
+      const onStream = (event: { content: string; endOfSpeech: boolean; interrupted: boolean }) => {
+        if (event.endOfSpeech || event.interrupted) {
+          client.removeListener(AnamEvent.MESSAGE_STREAM_EVENT_RECEIVED, onStream)
+          setIsSpeaking(false)
+          resolve()
+        }
+      }
+
+      client.addListener(AnamEvent.MESSAGE_STREAM_EVENT_RECEIVED, onStream)
+      client.talk(text).catch(() => {
+        client.removeListener(AnamEvent.MESSAGE_STREAM_EVENT_RECEIVED, onStream)
+        setIsSpeaking(false)
+        resolve()
+      })
+
+      // Safety timeout: if no endOfSpeech fires within 30s, resolve anyway
+      setTimeout(() => {
+        client.removeListener(AnamEvent.MESSAGE_STREAM_EVENT_RECEIVED, onStream)
+        setIsSpeaking(false)
+        resolve()
+      }, 30000)
+    })
+  }, [])
+
   // ─── FLOW ──────────────────────────────────────────────────────────────────
-  // Transcript appears AFTER each spoken line completes.
 
   const startFlow = useCallback(async () => {
-    if (flowStarted.current) return
+    if (flowStarted.current || !anamReady) return
     flowStarted.current = true
     if (cancelledRef.current) return
 
     setStep('intro')
 
-    // Intro: 4 lines with paced pauses between
-    await playLine(SCRIPT.intro1)
+    await anamTalk(SCRIPT.intro1)
     if (cancelledRef.current) return
     setCurrentLine(SCRIPT.intro1)
     await sleep(600)
 
-    await playLine(SCRIPT.intro2)
+    await anamTalk(SCRIPT.intro2)
     if (cancelledRef.current) return
     setCurrentLine(SCRIPT.intro2)
     await sleep(800)
 
-    await playLine(SCRIPT.intro3)
+    await anamTalk(SCRIPT.intro3)
     if (cancelledRef.current) return
     setCurrentLine(SCRIPT.intro3)
     await sleep(1000)
 
-    await playLine(SCRIPT.intro4)
+    await anamTalk(SCRIPT.intro4)
     if (cancelledRef.current) return
     setCurrentLine(SCRIPT.intro4)
     await sleep(800)
 
-    // Win 1 prompt
-    await playLine(SCRIPT.win1Prompt)
+    await anamTalk(SCRIPT.win1Prompt)
     if (cancelledRef.current) return
     setCurrentLine(SCRIPT.win1Prompt)
     setStep('win1-prompt')
-  }, [playLine])
+  }, [anamReady, anamTalk])
 
+  // Start flow once Anam is ready
   useEffect(() => {
-    const t = setTimeout(() => startFlow(), 400)
-    return () => { clearTimeout(t); cancelledRef.current = true; stopAudio() }
-  }, []) // eslint-disable-line
+    if (anamReady) startFlow()
+  }, [anamReady, startFlow])
 
   // ─── USER INPUT ────────────────────────────────────────────────────────────
 
@@ -229,28 +211,27 @@ export default function StartPage() {
       setWin1Attempts(a => a + 1)
 
       if (correct) {
-        await playLine(SCRIPT.win1Correct)
+        await anamTalk(SCRIPT.win1Correct)
         if (cancelledRef.current) return
         setCurrentLine(SCRIPT.win1Correct)
         await sleep(600)
 
-        // Bridge — removes step-by-step lesson feel
-        await playLine(SCRIPT.win1Natural)
+        await anamTalk(SCRIPT.win1Natural)
         if (cancelledRef.current) return
         setCurrentLine(SCRIPT.win1Natural)
         await sleep(600)
 
-        await playLine(SCRIPT.win2Setup)
+        await anamTalk(SCRIPT.win2Setup)
         if (cancelledRef.current) return
         setCurrentLine(SCRIPT.win2Setup)
         await sleep(300)
 
-        await playLine(SCRIPT.win2Question)
+        await anamTalk(SCRIPT.win2Question)
         if (cancelledRef.current) return
         setCurrentLine(SCRIPT.win2Question)
         setStep('win2-prompt')
       } else {
-        await playLine(SCRIPT.win1Incorrect)
+        await anamTalk(SCRIPT.win1Incorrect)
         if (cancelledRef.current) return
         setCurrentLine(SCRIPT.win1Incorrect)
         await sleep(500)
@@ -264,46 +245,45 @@ export default function StartPage() {
       setWin2Attempts(a => a + 1)
 
       if (correct) {
-        await playLine(SCRIPT.win2Correct)
+        await anamTalk(SCRIPT.win2Correct)
         if (cancelledRef.current) return
         setCurrentLine(SCRIPT.win2Correct)
         await sleep(500)
 
         setStep('transition')
-        await playLine(SCRIPT.transition1)
+        await anamTalk(SCRIPT.transition1)
         if (cancelledRef.current) return
         setCurrentLine(SCRIPT.transition1)
         await sleep(700)
 
-        await playLine(SCRIPT.transition2)
+        await anamTalk(SCRIPT.transition2)
         if (cancelledRef.current) return
         setCurrentLine(SCRIPT.transition2)
         setStep('mode-select')
       } else {
-        await playLine(SCRIPT.win2Incorrect)
+        await anamTalk(SCRIPT.win2Incorrect)
         if (cancelledRef.current) return
         setCurrentLine(SCRIPT.win2Incorrect)
         await sleep(500)
         setStep('win2-prompt')
       }
     }
-  }, [step, win1Attempts, win2Attempts, playLine])
+  }, [step, win1Attempts, win2Attempts, anamTalk])
 
   const handleModeSelect = useCallback(async (mode: 'beginner' | 'heritage') => {
     setStep('post-select')
     const line = mode === 'beginner' ? SCRIPT.beginnerPost : SCRIPT.heritagePost
-    await playLine(line)
+    await anamTalk(line)
     if (cancelledRef.current) return
     setCurrentLine(line)
     await sleep(500)
     setStep('account-gate')
-  }, [playLine])
+  }, [anamTalk])
 
   // ─── MIC ───────────────────────────────────────────────────────────────────
 
   const handleMicPress = useCallback(async () => {
-    if (isListening) return
-    stopAudio()
+    if (isListening || isSpeaking) return
     if (!isWebSpeechAvailable()) {
       setMicError('Use the text input below.')
       inputRef.current?.focus()
@@ -324,7 +304,7 @@ export default function StartPage() {
 
     if (step === 'win1-prompt') setStep('win1-listen')
     if (step === 'win2-prompt') setStep('win2-listen')
-  }, [isListening, step, stopAudio, handleUserInput])
+  }, [isListening, isSpeaking, step, handleUserInput])
 
   // ─── SIGNUP ────────────────────────────────────────────────────────────────
 
@@ -354,10 +334,6 @@ export default function StartPage() {
 
       {/* ── Keyframe animations ── */}
       <style>{`
-        @keyframes avatarBreathe {
-          0%, 100% { transform: scale(1); }
-          50%       { transform: scale(1.01); }
-        }
         @keyframes fadeInUp {
           from { opacity: 0; transform: translateY(10px); }
           to   { opacity: 1; transform: translateY(0); }
@@ -370,6 +346,16 @@ export default function StartPage() {
           0%, 100% { box-shadow: 0 0 0 2px rgba(212,175,55,0.25); }
           50%       { box-shadow: 0 0 0 5px rgba(212,175,55,0.08); }
         }
+        @keyframes speakingGlow {
+          0%, 100% { box-shadow: 0 0 12px rgba(212,175,55,0.2); }
+          50%       { box-shadow: 0 0 30px rgba(212,175,55,0.5); }
+        }
+        #anam-video {
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+          object-position: center 15%;
+        }
       `}</style>
 
       {/* ── Ambient lights ── */}
@@ -381,37 +367,39 @@ export default function StartPage() {
 
       {/* ── Noise texture ── */}
       <div className="pointer-events-none absolute inset-0 z-[9999] opacity-40 mix-blend-overlay"
-        style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height%3D'100%25' filter='url(%23n)' opacity='0.05'/%3E%3C/svg%3E")` }}
+        style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.05'/%3E%3C/svg%3E")` }}
       />
 
-      {/* ── Tap to begin overlay ── */}
-      {needsGesture && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center" style={{ backgroundColor: 'rgba(10,12,16,0.92)' }}>
-          <button
-            onClick={handleGestureUnlock}
-            className="px-8 py-4 rounded-full font-semibold text-[17px] tracking-wide transition-opacity hover:opacity-90"
-            style={{ backgroundColor: '#D4AF37', color: '#0a0c10' }}
-          >
-            Tap to begin
-          </button>
+      {/* ── Connecting overlay ── */}
+      {step === 'connecting' && (
+        <div className="fixed inset-0 z-50 flex flex-col items-center justify-center" style={{ backgroundColor: '#0a0c10' }}>
+          <div className="w-8 h-8 rounded-full border-2 border-white/10 border-t-white/50 animate-spin mb-4" />
+          <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.4)' }}>Connecting…</p>
+        </div>
+      )}
+
+      {/* ── Error state ── */}
+      {connectError && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center px-8" style={{ backgroundColor: '#0a0c10' }}>
+          <p style={{ fontSize: 15, color: 'rgba(255,255,255,0.5)', textAlign: 'center' }}>{connectError}</p>
         </div>
       )}
 
       {/* ── Main container ── */}
       <div className="relative z-10 h-full flex flex-col max-w-[430px] mx-auto">
 
-        {/* ── Avatar (75vh) ── */}
+        {/* ── Anam Video Avatar (75vh) ── */}
         {step !== 'account-gate' && (
           <div className="relative w-full flex-shrink-0" style={{ height: '75vh' }}>
-            <img
-              src="/avatars/ate-maria-portrait.png"
-              alt="Ate Maria"
-              className="w-full h-full object-cover"
+            <video
+              ref={videoRef}
+              id="anam-video"
+              autoPlay
+              playsInline
+              muted={false}
               style={{
-                objectPosition: 'center 15%',
-                filter: 'contrast(0.97) saturate(0.9) drop-shadow(0 20px 30px rgba(0,0,0,0.5))',
-                animation: 'avatarBreathe 6s ease-in-out infinite',
-                transformOrigin: 'center center',
+                filter: `contrast(0.97) saturate(0.9)${isSpeaking ? ' drop-shadow(0 0 20px rgba(212,175,55,0.2))' : ''}`,
+                transition: 'filter 0.5s ease',
               }}
             />
             {/* Gradient fade */}
@@ -428,7 +416,7 @@ export default function StartPage() {
             className="absolute left-0 w-full z-10"
             style={{ bottom: 60, padding: '0 24px 0' }}
           >
-            {/* Transcript strip — floating with blur */}
+            {/* Transcript strip */}
             {currentLine && (
               <div
                 className="rounded-xl mb-5"
@@ -440,7 +428,6 @@ export default function StartPage() {
                   padding: '16px',
                 }}
               >
-                {/* Transcript text — fadeInUp on each new line via key */}
                 <p
                   key={currentLine}
                   className="text-white text-[16px] leading-relaxed mb-0"
@@ -449,53 +436,25 @@ export default function StartPage() {
                   {currentLine}
                 </p>
 
-                {/* Win 1 support — Meaning staggered 300ms, Sabihin mo 600ms */}
+                {/* Win 1 support — staggered */}
                 {showWin1Cards && (
                   <div className="mt-3 space-y-1">
-                    <p
-                      style={{
-                        fontSize: '0.9rem',
-                        color: 'rgba(255,255,255,1)',
-                        opacity: 0,
-                        animation: 'fadeInUp 0.28s ease-out 0.3s both',
-                      }}
-                    >
+                    <p style={{ fontSize: '0.9rem', color: 'rgba(255,255,255,1)', opacity: 0, animation: 'fadeInUp 0.28s ease-out 0.3s both' }}>
                       <span style={{ opacity: 0.65 }}>Meaning&nbsp;&nbsp;</span>My name is ___
                     </p>
-                    <p
-                      style={{
-                        fontSize: '0.9rem',
-                        color: 'rgba(255,255,255,0.85)',
-                        opacity: 0,
-                        animation: 'fadeInUp 0.28s ease-out 0.6s both',
-                      }}
-                    >
+                    <p style={{ fontSize: '0.9rem', color: 'rgba(255,255,255,0.85)', opacity: 0, animation: 'fadeInUp 0.28s ease-out 0.6s both' }}>
                       <span style={{ opacity: 0.85 }}>Sabihin mo&nbsp;&nbsp;</span>Ako si ___
                     </p>
                   </div>
                 )}
 
-                {/* Win 2 support — same stagger pattern */}
+                {/* Win 2 support — staggered */}
                 {showWin2Cards && (
                   <div className="mt-3 space-y-1">
-                    <p
-                      style={{
-                        fontSize: '0.9rem',
-                        color: 'rgba(255,255,255,1)',
-                        opacity: 0,
-                        animation: 'fadeInUp 0.28s ease-out 0.3s both',
-                      }}
-                    >
+                    <p style={{ fontSize: '0.9rem', color: 'rgba(255,255,255,1)', opacity: 0, animation: 'fadeInUp 0.28s ease-out 0.3s both' }}>
                       <span style={{ opacity: 0.65 }}>Meaning&nbsp;&nbsp;</span>How are you?
                     </p>
-                    <p
-                      style={{
-                        fontSize: '0.9rem',
-                        color: 'rgba(255,255,255,0.85)',
-                        opacity: 0,
-                        animation: 'fadeInUp 0.28s ease-out 0.6s both',
-                      }}
-                    >
+                    <p style={{ fontSize: '0.9rem', color: 'rgba(255,255,255,0.85)', opacity: 0, animation: 'fadeInUp 0.28s ease-out 0.6s both' }}>
                       <span style={{ opacity: 0.85 }}>Sabihin mo&nbsp;&nbsp;</span>Mabuti ako.
                     </p>
                   </div>
@@ -505,36 +464,42 @@ export default function StartPage() {
 
             {/* Input area */}
             <div className="flex flex-col items-center gap-3">
-              {/* Mic button — soft glow, no pulse ring */}
-              <button
-                onClick={showInput ? handleMicPress : (needsGesture ? handleGestureUnlock : undefined)}
-                disabled={isListening}
-                className="flex items-center justify-center rounded-full transition-transform active:scale-95 touch-manipulation"
-                style={{
-                  width: 64, height: 64,
-                  background: isListening ? 'rgba(212,175,55,0.15)' : 'rgba(255,255,255,0.06)',
-                  border: `1px solid ${isListening ? 'rgba(212,175,55,0.5)' : 'rgba(255,255,255,0.08)'}`,
-                  animation: isListening
-                    ? 'listeningRing 1.5s ease-in-out infinite'
-                    : 'micGlow 5s ease-in-out infinite',
-                }}
-                aria-label={isListening ? 'Listening' : 'Speak'}
-              >
-                {isAudioLoading ? (
-                  <div className="w-5 h-5 rounded-full border-2 border-white/20 border-t-white/60 animate-spin" />
-                ) : (
-                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#D4AF37" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z" />
-                    <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
-                    <line x1="12" y1="19" x2="12" y2="23" />
-                    <line x1="8" y1="23" x2="16" y2="23" />
-                  </svg>
-                )}
-              </button>
+              {/* Mic button */}
+              {showMicBtn && (
+                <button
+                  onClick={showInput && !isSpeaking ? handleMicPress : undefined}
+                  disabled={isListening || isSpeaking}
+                  className="flex items-center justify-center rounded-full transition-transform active:scale-95 touch-manipulation"
+                  style={{
+                    width: 64, height: 64,
+                    background: isListening ? 'rgba(212,175,55,0.15)' : isSpeaking ? 'rgba(212,175,55,0.08)' : 'rgba(255,255,255,0.06)',
+                    border: `1px solid ${isListening ? 'rgba(212,175,55,0.5)' : 'rgba(255,255,255,0.08)'}`,
+                    animation: isListening ? 'listeningRing 1.5s ease-in-out infinite' : isSpeaking ? 'speakingGlow 2s ease-in-out infinite' : 'micGlow 5s ease-in-out infinite',
+                  }}
+                  aria-label={isListening ? 'Listening' : 'Speak'}
+                >
+                  {isSpeaking ? (
+                    // Speaking indicator — animated dots
+                    <div className="flex gap-1 items-center">
+                      {[0,1,2].map(i => (
+                        <div key={i} className="w-1.5 h-1.5 rounded-full bg-[#D4AF37]"
+                          style={{ animation: `fadeInUp 0.6s ease-in-out ${i * 0.2}s infinite alternate` }} />
+                      ))}
+                    </div>
+                  ) : (
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#D4AF37" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z" />
+                      <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
+                      <line x1="12" y1="19" x2="12" y2="23" />
+                      <line x1="8" y1="23" x2="16" y2="23" />
+                    </svg>
+                  )}
+                </button>
+              )}
 
               {isListening && <p style={{ fontSize: 13, color: 'rgba(212,175,55,0.7)' }}>Listening...</p>}
 
-              {showInput && !isListening && (
+              {showInput && !isListening && !isSpeaking && (
                 <>
                   <p style={{ fontSize: 13, color: '#64748b', textAlign: 'center' }}>or type below</p>
                   <div className="w-full flex gap-2">
@@ -568,7 +533,6 @@ export default function StartPage() {
 
               {micError && <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.35)', textAlign: 'center' }}>{micError}</p>}
 
-              {/* Sign in link */}
               <Link href="/login" style={{ fontSize: 12, color: '#64748b', marginTop: 4 }}
                 className="hover:text-white/50 transition-colors">
                 Already have an account? Sign in
@@ -590,34 +554,25 @@ export default function StartPage() {
                 padding: '16px',
               }}
             >
-              <p
-                key={SCRIPT.transition2}
-                className="text-white text-[16px] leading-relaxed"
-                style={{ animation: 'fadeInUp 0.28s ease-out both' }}
-              >
-                {SCRIPT.transition2}
-              </p>
+              <p key={SCRIPT.transition2} className="text-white text-[16px] leading-relaxed"
+                style={{ animation: 'fadeInUp 0.28s ease-out both' }}>{SCRIPT.transition2}</p>
             </div>
 
             <div className="space-y-3">
-              <button
-                onClick={() => handleModeSelect('beginner')}
+              <button onClick={() => handleModeSelect('beginner')}
                 className="w-full text-left rounded-2xl px-5 py-4 transition-all duration-200 touch-manipulation"
                 style={{ border: '1px solid rgba(255,255,255,0.08)', background: 'rgba(255,255,255,0.04)' }}
                 onMouseEnter={e => (e.currentTarget.style.borderColor = 'rgba(212,175,55,0.4)')}
-                onMouseLeave={e => (e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)')}
-              >
+                onMouseLeave={e => (e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)')}>
                 <p className="text-white font-semibold mb-1">Beginner</p>
                 <p style={{ fontSize: 13, color: '#94a3b8' }}>Start from the ground up. I'll guide you step by step.</p>
               </button>
 
-              <button
-                onClick={() => handleModeSelect('heritage')}
+              <button onClick={() => handleModeSelect('heritage')}
                 className="w-full text-left rounded-2xl px-5 py-4 transition-all duration-200 touch-manipulation"
                 style={{ border: '1px solid rgba(255,255,255,0.08)', background: 'rgba(255,255,255,0.04)' }}
                 onMouseEnter={e => (e.currentTarget.style.borderColor = 'rgba(212,175,55,0.4)')}
-                onMouseLeave={e => (e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)')}
-              >
+                onMouseLeave={e => (e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)')}>
                 <p className="text-white font-semibold mb-1">Heritage</p>
                 <p style={{ fontSize: 13, color: '#94a3b8' }}>You understand more than you think. Let's unlock it.</p>
               </button>
@@ -635,52 +590,29 @@ export default function StartPage() {
         {step === 'account-gate' && (
           <div className="flex flex-col h-full pt-16 pb-10 px-6">
             <div className="flex justify-center mb-6">
-              <div
-                className="w-20 h-20 rounded-full overflow-hidden flex-shrink-0"
-                style={{ border: '1px solid rgba(255,255,255,0.1)' }}
-              >
-                <img
-                  src="/avatars/ate-maria-portrait.png"
-                  alt="Ate Maria"
-                  className="w-full h-full object-cover"
-                  style={{ objectPosition: 'center 15%' }}
-                />
+              <div className="w-20 h-20 rounded-full overflow-hidden flex-shrink-0"
+                style={{ border: '1px solid rgba(255,255,255,0.1)' }}>
+                <img src="/avatars/ate-maria-portrait.png" alt="Ate Maria"
+                  className="w-full h-full object-cover" style={{ objectPosition: 'center 15%' }} />
               </div>
             </div>
-
             <h2 className="text-[22px] font-semibold text-center text-white mb-2">
               Save your progress and continue.
             </h2>
-            <p className="text-center mb-8" style={{ fontSize: 14, color: '#94a3b8' }}>
-              You've already started.
-            </p>
+            <p className="text-center mb-8" style={{ fontSize: 14, color: '#94a3b8' }}>You've already started.</p>
 
             <form onSubmit={handleSignup} className="space-y-3">
-              <input
-                type="email"
-                required
-                value={signupEmail}
-                onChange={e => setSignupEmail(e.target.value)}
-                placeholder="Email"
-                className="w-full text-white rounded-2xl px-5 py-3.5 text-[15px] focus:outline-none focus:ring-1"
-                style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.08)', caretColor: '#D4AF37' }}
-              />
-              <input
-                type="password"
-                required
-                value={signupPassword}
-                onChange={e => setSignupPassword(e.target.value)}
+              <input type="email" required value={signupEmail} onChange={e => setSignupEmail(e.target.value)}
+                placeholder="Email" className="w-full text-white rounded-2xl px-5 py-3.5 text-[15px] focus:outline-none focus:ring-1"
+                style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.08)', caretColor: '#D4AF37' }} />
+              <input type="password" required value={signupPassword} onChange={e => setSignupPassword(e.target.value)}
                 placeholder="Password (8+ chars, 1 uppercase, 1 number)"
                 className="w-full text-white rounded-2xl px-5 py-3.5 text-[15px] focus:outline-none focus:ring-1"
-                style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.08)', caretColor: '#D4AF37' }}
-              />
+                style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.08)', caretColor: '#D4AF37' }} />
               {signupError && <p className="text-red-400/80 text-[13px] px-1">{signupError}</p>}
-              <button
-                type="submit"
-                disabled={signupLoading}
+              <button type="submit" disabled={signupLoading}
                 className="w-full rounded-2xl py-3.5 font-semibold text-[16px] disabled:opacity-60 transition-opacity mt-2"
-                style={{ background: '#D4AF37', color: '#0a0c10' }}
-              >
+                style={{ background: '#D4AF37', color: '#0a0c10' }}>
                 {signupLoading ? 'Creating account...' : 'Continue'}
               </button>
             </form>
