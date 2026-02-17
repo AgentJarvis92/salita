@@ -54,8 +54,8 @@ export function VoiceProvider({ children }: { children: ReactNode }) {
     supabase
       .from('profiles')
       .select('voice_enabled')
-      .eq('id', userId)
-      .single()
+      .eq('user_id', userId)
+      .maybeSingle()
       .then(({ data }) => {
         if (data?.voice_enabled != null) {
           setVoiceEnabled(data.voice_enabled)
@@ -83,7 +83,7 @@ export function VoiceProvider({ children }: { children: ReactNode }) {
 
       // Persist to DB
       if (userId) {
-        supabase.from('profiles').update({ voice_enabled: next }).eq('id', userId).then(() => {})
+        supabase.from('profiles').update({ voice_enabled: next }).eq('user_id', userId).then(() => {})
       }
 
       return next

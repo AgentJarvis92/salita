@@ -16,18 +16,14 @@ export async function GET(request: Request) {
 
     // Simple profile creation for new users
     if (user && !error) {
-      const { data: profile } = await supabase
+      await supabase
         .from('profiles')
-        .select('id')
-        .eq('user_id', user.id)
-        .single()
-
-      if (!profile) {
-        await supabase.from('profiles').insert({
+        .upsert({
           user_id: user.id,
           name: user.user_metadata?.full_name || user.email?.split('@')[0] || 'User',
-        })
-      }
+        }, { onConflict: 'user_id' })
+        .select()
+        .maybeSingle()
     }
   }
 

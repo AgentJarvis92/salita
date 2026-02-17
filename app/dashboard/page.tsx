@@ -4,6 +4,7 @@ import { useAuth } from '@/lib/auth-context';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
+import { ensureProfile } from '@/lib/ensure-profile';
 
 export default function DashboardPage() {
   const { user, loading } = useAuth();
@@ -20,16 +21,11 @@ export default function DashboardPage() {
   useEffect(() => {
     async function fetchUserName() {
       if (user) {
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('name')
-          .eq('user_id', user.id)
-          .single();
+        const profile = await ensureProfile(supabase, user);
         
         if (profile?.name) {
           setUserName(profile.name.toUpperCase());
         } else {
-          // Clean fallback: use email username but sanitize
           const emailName = user.email?.split('@')[0]?.replace(/[^a-zA-Z0-9]/g, '') || 'FRIEND';
           setUserName(emailName.toUpperCase());
         }

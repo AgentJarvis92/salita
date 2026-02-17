@@ -5,6 +5,7 @@ import { useVoice } from '@/lib/voice-context';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState, useRef } from 'react';
 import { supabase } from '@/lib/supabase';
+import { ensureProfile } from '@/lib/ensure-profile';
 import MicButton from '@/components/voice/MicButton';
 import VoiceToggle from '@/components/voice/VoiceToggle';
 import ChatBubble from '@/components/chat/ChatBubble';
@@ -65,11 +66,7 @@ function ChatPageContent() {
   useEffect(() => {
     async function loadPersona() {
       if (!user) return;
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('selected_tutor')
-        .eq('user_id', user.id)
-        .single();
+      const profile = await ensureProfile(supabase, user);
       
       if (!profile?.selected_tutor) {
         router.push('/dashboard');
