@@ -373,22 +373,6 @@ export default function StartPage() {
   return (
     <div className="min-h-screen bg-[#0a0a0f] text-white flex flex-col items-center">
 
-      {/* Breathing animation keyframes */}
-      <style>{`
-        @keyframes breathe {
-          0%, 100% { transform: scale(1.0); opacity: 0.95; }
-          50% { transform: scale(1.018); opacity: 1; }
-        }
-        @keyframes mic-pulse {
-          0%, 100% { box-shadow: 0 0 0 0 rgba(212,175,55,0.4); }
-          50% { box-shadow: 0 0 0 14px rgba(212,175,55,0); }
-        }
-        @keyframes listening-ring {
-          0%, 100% { box-shadow: 0 0 0 0 rgba(212,175,55,0.6); }
-          50% { box-shadow: 0 0 0 18px rgba(212,175,55,0); }
-        }
-      `}</style>
-
       {/* ── TAP TO BEGIN OVERLAY ── */}
       {needsGesture && (
         <div className="fixed inset-0 z-50 bg-[#0a0a0f]/95 flex flex-col items-center justify-center">

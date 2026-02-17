@@ -23,6 +23,7 @@ export async function middleware(request: NextRequest) {
       "img-src 'self' data: https:",
       "font-src 'self' data:",
       "connect-src 'self' https://wbcfrfpndsczqtuilfsl.supabase.co https://api.openai.com",
+      "media-src 'self' blob:",
       "frame-src 'none'",
       "object-src 'none'",
       "base-uri 'self'",
