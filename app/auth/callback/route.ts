@@ -37,10 +37,13 @@ export async function GET(request: Request) {
   const redirectUrl = redirectTo || '/dashboard'
   const isAllowedRedirect = allowedRedirects.some(allowed => redirectUrl === allowed || redirectUrl.startsWith(allowed + '?'))
 
+  // Use NEXT_PUBLIC_SITE_URL if set (avoids Railway internal localhost:8080 issue)
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || requestUrl.origin
+
   if (isAllowedRedirect) {
-    return NextResponse.redirect(new URL(redirectUrl, requestUrl.origin))
+    return NextResponse.redirect(new URL(redirectUrl, siteUrl))
   }
 
   // Default to dashboard if redirect is invalid
-  return NextResponse.redirect(new URL('/dashboard', requestUrl.origin))
+  return NextResponse.redirect(new URL('/dashboard', siteUrl))
 }

@@ -12,21 +12,22 @@ const rateLimitMap = new Map<string, { count: number; resetTime: number }>()
 const RATE_LIMIT = 30
 const RATE_LIMIT_WINDOW = 60 * 1000 // 1 minute
 
-function checkRateLimit(userId: string): boolean {
+function checkRateLimit(userId: string): { allowed: boolean; remaining: number; resetTime: number } {
   const now = Date.now()
   const userLimit = rateLimitMap.get(userId)
 
   if (!userLimit || now > userLimit.resetTime) {
-    rateLimitMap.set(userId, { count: 1, resetTime: now + RATE_LIMIT_WINDOW })
-    return true
+    const resetTime = now + RATE_LIMIT_WINDOW
+    rateLimitMap.set(userId, { count: 1, resetTime })
+    return { allowed: true, remaining: RATE_LIMIT - 1, resetTime: Math.floor(resetTime / 1000) }
   }
 
   if (userLimit.count >= RATE_LIMIT) {
-    return false
+    return { allowed: false, remaining: 0, resetTime: Math.floor(userLimit.resetTime / 1000) }
   }
 
   userLimit.count++
-  return true
+  return { allowed: true, remaining: RATE_LIMIT - userLimit.count, resetTime: Math.floor(userLimit.resetTime / 1000) }
 }
 
 interface AIResponse {
@@ -66,7 +67,8 @@ export async function POST(request: Request) {
     }
 
     // ⏱️ RATE LIMIT - Prevent abuse (30 req/min per user)
-    if (!checkRateLimit(user.id)) {
+    const rateLimit = checkRateLimit(user.id)
+    if (!rateLimit.allowed) {
       return NextResponse.json(
         { error: 'Too many requests. Please wait a moment.' },
         { status: 429 }
@@ -167,6 +169,12 @@ export async function POST(request: Request) {
           return NextResponse.json({
             success: true,
             response: responseData,
+          }, {
+            headers: {
+              'X-RateLimit-Limit': String(RATE_LIMIT),
+              'X-RateLimit-Remaining': String(rateLimit.remaining),
+              'X-RateLimit-Reset': String(rateLimit.resetTime),
+            },
           })
         } else {
           console.error('Invalid AI response structure:', responseData)
@@ -192,6 +200,12 @@ export async function POST(request: Request) {
         correction: 'None',
         hint: persona === 'kuya_josh' ? null : "Give me a moment, having trouble. Try saying: 'Sige' or 'Okay'",
         tone: persona === 'kuya_josh' ? 'casual' : 'warm',
+      },
+    }, {
+      headers: {
+        'X-RateLimit-Limit': String(RATE_LIMIT),
+        'X-RateLimit-Remaining': String(rateLimit.remaining),
+        'X-RateLimit-Reset': String(rateLimit.resetTime),
       },
     })
   } catch (error: any) {

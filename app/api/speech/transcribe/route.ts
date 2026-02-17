@@ -9,6 +9,8 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server'
+import { createClient } from '@/lib/supabase'
+import { cookies } from 'next/headers'
 import { openai } from '@/lib/openai'
 
 export const runtime = 'nodejs'
@@ -18,6 +20,14 @@ const MAX_SIZE = 25 * 1024 * 1024
 
 export async function POST(request: NextRequest) {
   try {
+    // Auth guard — require valid session
+    const cookieStore = await cookies()
+    const supabase = createClient(cookieStore)
+    const { data: { user }, error: authError } = await supabase.auth.getUser()
+    if (authError || !user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
     const formData = await request.formData()
     const audioFile = formData.get('audio') as File | null
     const language = (formData.get('language') as string) || 'tl' // Tagalog default

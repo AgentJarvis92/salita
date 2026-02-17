@@ -56,7 +56,7 @@ export default function SignupPage() {
 
       if (signupError) {
         if (signupError.message.includes('already registered')) {
-          setError('This email is already registered. Please sign in instead.')
+          setError('Unable to create account. Please check your details or try signing in.')
         } else {
           setError('Unable to create account. Please try again.')
         }
