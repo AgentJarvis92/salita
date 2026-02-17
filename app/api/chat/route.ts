@@ -144,14 +144,16 @@ export async function POST(request: Request) {
             await supabase.from('messages').insert({
               user_id: user.id,
               role: 'user',
-              tagalog: userMessage.match(/[a-zA-Z]/) ? null : userMessage, // Tagalog if non-English
-              english: userMessage.match(/[a-zA-Z]/) ? userMessage : null, // English if has Latin chars
+              persona: persona,
+              tagalog: userMessage.match(/[a-zA-Z]/) ? null : userMessage,
+              english: userMessage.match(/[a-zA-Z]/) ? userMessage : null,
             })
 
             // Save assistant response
             await supabase.from('messages').insert({
               user_id: user.id,
               role: 'assistant',
+              persona: persona,
               tagalog: responseData.tagalog,
               hint: responseData.hint,
               correction: responseData.correction !== 'None' ? responseData.correction : null,

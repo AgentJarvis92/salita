@@ -84,11 +84,12 @@ function ChatPageContent() {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  // Hydrate chat history from DB on mount
+  // Hydrate chat history from DB after persona is loaded
   useEffect(() => {
+    if (!personaLoaded) return;
     async function loadHistory() {
       try {
-        const response = await fetch('/api/messages');
+        const response = await fetch(`/api/messages?persona=${persona}`);
         if (!response.ok) {
           setHistoryLoaded(true);
           return;
@@ -127,7 +128,7 @@ function ChatPageContent() {
       }
     }
     loadHistory();
-  }, []);
+  }, [personaLoaded, persona]);
 
   // Send initial greeting only if no history exists and persona is loaded
   useEffect(() => {
