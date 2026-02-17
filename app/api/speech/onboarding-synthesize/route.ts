@@ -50,9 +50,9 @@ export async function POST(request: NextRequest) {
 
     const response = await openai.audio.speech.create({
       model: 'tts-1',
-      voice: 'nova', // Ate Maria — fixed for onboarding
+      voice: 'nova',    // Ate Maria — fixed for onboarding
       input: text,
-      speed: 1.0,
+      speed: 0.93,      // Slightly slower for natural warmth
       response_format: 'mp3',
     })
 

@@ -2,7 +2,15 @@
 
 /**
  * /start — Phase 7: Voice-First Onboarding
- * UI: Variant export (design-fb642de4) — implemented faithfully
+ * Refinement patch 2026-02-17:
+ *   - 4-line warm intro with paced pauses
+ *   - Transcript appears AFTER voice completes (fadeInUp)
+ *   - TTS segment shaping (short chunks, 200ms gaps)
+ *   - Staggered Meaning / Sabihin mo cards
+ *   - Avatar breathing animation (scale 1→1.01, 6s)
+ *   - Mic glow replaces pulse ring
+ *   - Transcript strip floats 60px above bottom chrome
+ *   - "See? That felt natural." bridge after win1
  * Script: LOCKED 2026-02-17 — no paraphrasing, no GPT
  */
 
@@ -13,11 +21,14 @@ import Link from 'next/link'
 
 // ─── LOCKED SCRIPT ────────────────────────────────────────────────────────────
 const SCRIPT = {
-  intro1:        "Hi. I'm Ate Maria. We're going to speak Tagalog right now.",
-  intro2:        "Don't worry. I've got you.",
+  intro1:        "Hi. I'm Ate Maria.",
+  intro2:        "I'm really glad you're here.",
+  intro3:        "We're going to speak Tagalog right now.",
+  intro4:        "Don't worry. I've got you.",
   win1Prompt:    "First — tell me your name.",
   win1Correct:   "Perfect. See? You're already speaking Tagalog.",
   win1Incorrect: "Almost. Say it like this — Ako si, your name.",
+  win1Natural:   "See? That felt natural.",
   win2Setup:     "Now I'll ask you something.",
   win2Question:  "Kamusta ka?",
   win2Correct:   "Ang galing. That means I'm good.",
@@ -27,6 +38,19 @@ const SCRIPT = {
   beginnerPost:  "Okay. We'll build this slowly and naturally. You won't feel lost.",
   heritagePost:  "Good. I won't baby you. But I'll catch you when you need it.",
 } as const
+
+// ─── TTS SHAPING ─────────────────────────────────────────────────────────────
+// Maps display text → spoken segments (short chunks with 200ms gaps).
+// Transcript always shows full display text — only TTS is shaped.
+const TTS_SEGMENTS: Partial<Record<string, string[]>> = {
+  [SCRIPT.win1Correct]:   ["Perfect.", "See? You're already speaking Tagalog."],
+  [SCRIPT.win1Incorrect]: ["Almost.", "Say it like this.", "Ako si, then your name."],
+  [SCRIPT.win2Correct]:   ["Ang galing.", "That means I'm good."],
+  [SCRIPT.win2Incorrect]: ["Close.", "Try this.", "Mabuti ako."],
+  [SCRIPT.transition1]:   ["That's it.", "You just had your first real conversation in Tagalog."],
+  [SCRIPT.beginnerPost]:  ["Okay.", "We'll build this slowly and naturally.", "You won't feel lost."],
+  [SCRIPT.heritagePost]:  ["Good.", "I won't baby you.", "But I'll catch you when you need it."],
+}
 
 type Step =
   | 'init' | 'intro'
@@ -46,27 +70,27 @@ function isWebSpeechAvailable(): boolean {
 export default function StartPage() {
   const router = useRouter()
 
-  const [step, setStep]                 = useState<Step>('init')
-  const [needsGesture, setNeedsGesture] = useState(false)
-  const [currentLine, setCurrentLine]   = useState('')
-  const [textInput, setTextInput]       = useState('')
-  const [isListening, setIsListening]   = useState(false)
+  const [step, setStep]                     = useState<Step>('init')
+  const [needsGesture, setNeedsGesture]     = useState(false)
+  const [currentLine, setCurrentLine]       = useState('')
+  const [textInput, setTextInput]           = useState('')
+  const [isListening, setIsListening]       = useState(false)
   const [isAudioLoading, setIsAudioLoading] = useState(false)
-  const [win1Attempts, setWin1Attempts] = useState(0)
-  const [win2Attempts, setWin2Attempts] = useState(0)
-  const [micError, setMicError]         = useState('')
-  const [signupEmail, setSignupEmail]   = useState('')
+  const [win1Attempts, setWin1Attempts]     = useState(0)
+  const [win2Attempts, setWin2Attempts]     = useState(0)
+  const [micError, setMicError]             = useState('')
+  const [signupEmail, setSignupEmail]       = useState('')
   const [signupPassword, setSignupPassword] = useState('')
-  const [signupError, setSignupError]   = useState('')
-  const [signupLoading, setSignupLoading] = useState(false)
+  const [signupError, setSignupError]       = useState('')
+  const [signupLoading, setSignupLoading]   = useState(false)
 
-  const audioRef      = useRef<HTMLAudioElement | null>(null)
-  const pendingRef    = useRef<{ audio: HTMLAudioElement; url: string; resolve: () => void } | null>(null)
-  const cancelledRef  = useRef(false)
-  const flowStarted   = useRef(false)
-  const inputRef      = useRef<HTMLInputElement>(null)
+  const audioRef     = useRef<HTMLAudioElement | null>(null)
+  const pendingRef   = useRef<{ audio: HTMLAudioElement; url: string; resolve: () => void } | null>(null)
+  const cancelledRef = useRef(false)
+  const flowStarted  = useRef(false)
+  const inputRef     = useRef<HTMLInputElement>(null)
 
-  // ─── AUDIO ─────────────────────────────────────────────────────────────────
+  // ─── AUDIO — single segment ────────────────────────────────────────────────
 
   const stopAudio = useCallback(() => {
     if (audioRef.current) {
@@ -76,7 +100,7 @@ export default function StartPage() {
     }
   }, [])
 
-  const playLine = useCallback(async (text: string): Promise<void> => {
+  const playSegment = useCallback(async (text: string): Promise<void> => {
     if (cancelledRef.current) return
     stopAudio()
     try {
@@ -89,8 +113,8 @@ export default function StartPage() {
       setIsAudioLoading(false)
       if (!res.ok || cancelledRef.current) return
 
-      const blob = await res.blob()
-      const url  = URL.createObjectURL(blob)
+      const blob  = await res.blob()
+      const url   = URL.createObjectURL(blob)
       const audio = new Audio(url)
       audioRef.current = audio
 
@@ -113,6 +137,21 @@ export default function StartPage() {
     } catch { setIsAudioLoading(false) }
   }, [stopAudio])
 
+  // ─── AUDIO — shaped (segments + 200ms gaps) ────────────────────────────────
+
+  const playLine = useCallback(async (text: string): Promise<void> => {
+    const segments = TTS_SEGMENTS[text]
+    if (segments) {
+      for (let i = 0; i < segments.length; i++) {
+        if (cancelledRef.current) return
+        if (i > 0) await sleep(200)   // 200ms gap between segments
+        await playSegment(segments[i])
+      }
+    } else {
+      await playSegment(text)
+    }
+  }, [playSegment])
+
   const handleGestureUnlock = useCallback(() => {
     setNeedsGesture(false)
     if (pendingRef.current) {
@@ -131,6 +170,7 @@ export default function StartPage() {
   }, []) // eslint-disable-line
 
   // ─── FLOW ──────────────────────────────────────────────────────────────────
+  // Transcript appears AFTER each spoken line completes.
 
   const startFlow = useCallback(async () => {
     if (flowStarted.current) return
@@ -138,17 +178,32 @@ export default function StartPage() {
     if (cancelledRef.current) return
 
     setStep('intro')
-    setCurrentLine(SCRIPT.intro1)
+
+    // Intro: 4 lines with paced pauses between
     await playLine(SCRIPT.intro1)
     if (cancelledRef.current) return
-    await sleep(900)
-    setCurrentLine(SCRIPT.intro2)
+    setCurrentLine(SCRIPT.intro1)
+    await sleep(600)
+
     await playLine(SCRIPT.intro2)
     if (cancelledRef.current) return
+    setCurrentLine(SCRIPT.intro2)
+    await sleep(800)
 
-    setCurrentLine(SCRIPT.win1Prompt)
+    await playLine(SCRIPT.intro3)
+    if (cancelledRef.current) return
+    setCurrentLine(SCRIPT.intro3)
+    await sleep(1000)
+
+    await playLine(SCRIPT.intro4)
+    if (cancelledRef.current) return
+    setCurrentLine(SCRIPT.intro4)
+    await sleep(800)
+
+    // Win 1 prompt
     await playLine(SCRIPT.win1Prompt)
     if (cancelledRef.current) return
+    setCurrentLine(SCRIPT.win1Prompt)
     setStep('win1-prompt')
   }, [playLine])
 
@@ -172,23 +227,32 @@ export default function StartPage() {
       setStep('win1-result')
       const correct = win1Attempts > 0 ? true : detectWin1(trimmed)
       setWin1Attempts(a => a + 1)
+
       if (correct) {
-        setCurrentLine(SCRIPT.win1Correct)
         await playLine(SCRIPT.win1Correct)
         if (cancelledRef.current) return
-        await sleep(500)
-        setCurrentLine(SCRIPT.win2Setup)
+        setCurrentLine(SCRIPT.win1Correct)
+        await sleep(600)
+
+        // Bridge — removes step-by-step lesson feel
+        await playLine(SCRIPT.win1Natural)
+        if (cancelledRef.current) return
+        setCurrentLine(SCRIPT.win1Natural)
+        await sleep(600)
+
         await playLine(SCRIPT.win2Setup)
         if (cancelledRef.current) return
+        setCurrentLine(SCRIPT.win2Setup)
         await sleep(300)
-        setCurrentLine(SCRIPT.win2Question)
+
         await playLine(SCRIPT.win2Question)
         if (cancelledRef.current) return
+        setCurrentLine(SCRIPT.win2Question)
         setStep('win2-prompt')
       } else {
-        setCurrentLine(SCRIPT.win1Incorrect)
         await playLine(SCRIPT.win1Incorrect)
         if (cancelledRef.current) return
+        setCurrentLine(SCRIPT.win1Incorrect)
         await sleep(500)
         setStep('win1-prompt')
       }
@@ -198,24 +262,27 @@ export default function StartPage() {
       setStep('win2-result')
       const correct = win2Attempts > 0 ? true : detectWin2(trimmed)
       setWin2Attempts(a => a + 1)
+
       if (correct) {
-        setCurrentLine(SCRIPT.win2Correct)
         await playLine(SCRIPT.win2Correct)
         if (cancelledRef.current) return
+        setCurrentLine(SCRIPT.win2Correct)
         await sleep(500)
+
         setStep('transition')
-        setCurrentLine(SCRIPT.transition1)
         await playLine(SCRIPT.transition1)
         if (cancelledRef.current) return
+        setCurrentLine(SCRIPT.transition1)
         await sleep(700)
-        setCurrentLine(SCRIPT.transition2)
+
         await playLine(SCRIPT.transition2)
         if (cancelledRef.current) return
+        setCurrentLine(SCRIPT.transition2)
         setStep('mode-select')
       } else {
-        setCurrentLine(SCRIPT.win2Incorrect)
         await playLine(SCRIPT.win2Incorrect)
         if (cancelledRef.current) return
+        setCurrentLine(SCRIPT.win2Incorrect)
         await sleep(500)
         setStep('win2-prompt')
       }
@@ -225,9 +292,9 @@ export default function StartPage() {
   const handleModeSelect = useCallback(async (mode: 'beginner' | 'heritage') => {
     setStep('post-select')
     const line = mode === 'beginner' ? SCRIPT.beginnerPost : SCRIPT.heritagePost
-    setCurrentLine(line)
     await playLine(line)
     if (cancelledRef.current) return
+    setCurrentLine(line)
     await sleep(500)
     setStep('account-gate')
   }, [playLine])
@@ -276,7 +343,6 @@ export default function StartPage() {
   const showMicBtn    = showInput || step === 'intro' || step === 'win1-result' || step === 'win2-result'
   const showWin1Cards = step === 'win1-prompt' || step === 'win1-listen'
   const showWin2Cards = step === 'win2-prompt' || step === 'win2-listen'
-  const micPulsing    = step === 'win1-prompt' || step === 'win2-prompt'
 
   // ─── RENDER ────────────────────────────────────────────────────────────────
 
@@ -285,6 +351,26 @@ export default function StartPage() {
       className="relative w-full h-screen overflow-hidden"
       style={{ backgroundColor: '#0a0c10', fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Inter", sans-serif' }}
     >
+
+      {/* ── Keyframe animations ── */}
+      <style>{`
+        @keyframes avatarBreathe {
+          0%, 100% { transform: scale(1); }
+          50%       { transform: scale(1.01); }
+        }
+        @keyframes fadeInUp {
+          from { opacity: 0; transform: translateY(10px); }
+          to   { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes micGlow {
+          0%, 100% { box-shadow: 0 0 8px rgba(212,175,55,0.08); }
+          50%       { box-shadow: 0 0 22px rgba(212,175,55,0.28); }
+        }
+        @keyframes listeningRing {
+          0%, 100% { box-shadow: 0 0 0 2px rgba(212,175,55,0.25); }
+          50%       { box-shadow: 0 0 0 5px rgba(212,175,55,0.08); }
+        }
+      `}</style>
 
       {/* ── Ambient lights ── */}
       <div className="pointer-events-none absolute inset-0 z-0">
@@ -295,7 +381,7 @@ export default function StartPage() {
 
       {/* ── Noise texture ── */}
       <div className="pointer-events-none absolute inset-0 z-[9999] opacity-40 mix-blend-overlay"
-        style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.05'/%3E%3C/svg%3E")` }}
+        style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height%3D'100%25' filter='url(%23n)' opacity='0.05'/%3E%3C/svg%3E")` }}
       />
 
       {/* ── Tap to begin overlay ── */}
@@ -321,7 +407,12 @@ export default function StartPage() {
               src="/avatars/ate-maria-portrait.png"
               alt="Ate Maria"
               className="w-full h-full object-cover"
-              style={{ objectPosition: 'center 15%', filter: 'contrast(1.05) saturate(0.9) brightness(1)' }}
+              style={{
+                objectPosition: 'center 15%',
+                filter: 'contrast(0.97) saturate(0.9) drop-shadow(0 20px 30px rgba(0,0,0,0.5))',
+                animation: 'avatarBreathe 6s ease-in-out infinite',
+                transformOrigin: 'center center',
+              }}
             />
             {/* Gradient fade */}
             <div
@@ -331,16 +422,16 @@ export default function StartPage() {
           </div>
         )}
 
-        {/* ── Bottom content ── */}
+        {/* ── Bottom content — floats 60px above chrome ── */}
         {step !== 'account-gate' && step !== 'mode-select' && (
           <div
-            className="absolute bottom-0 left-0 w-full z-10"
-            style={{ padding: '0 24px 32px' }}
+            className="absolute left-0 w-full z-10"
+            style={{ bottom: 60, padding: '0 24px 0' }}
           >
-            {/* Transcript strip */}
+            {/* Transcript strip — floating with blur */}
             {currentLine && (
               <div
-                className="rounded-xl mb-6"
+                className="rounded-xl mb-5"
                 style={{
                   background: 'rgba(0,0,0,0.4)',
                   backdropFilter: 'blur(30px)',
@@ -349,28 +440,63 @@ export default function StartPage() {
                   padding: '16px',
                 }}
               >
-                <p className="text-white text-[16px] leading-relaxed mb-0">{currentLine}</p>
+                {/* Transcript text — fadeInUp on each new line via key */}
+                <p
+                  key={currentLine}
+                  className="text-white text-[16px] leading-relaxed mb-0"
+                  style={{ animation: 'fadeInUp 0.28s ease-out both' }}
+                >
+                  {currentLine}
+                </p>
 
-                {/* Win 1 support lines — fade in */}
+                {/* Win 1 support — Meaning staggered 300ms, Sabihin mo 600ms */}
                 {showWin1Cards && (
-                  <div className="mt-3 space-y-1" style={{ animation: 'fadeInUp 0.4s ease-out 0.3s both' }}>
-                    <p style={{ fontSize: 13, color: '#64748b' }}>
-                      <span className="mr-1">Meaning:</span>My name is ___
+                  <div className="mt-3 space-y-1">
+                    <p
+                      style={{
+                        fontSize: '0.9rem',
+                        color: 'rgba(255,255,255,1)',
+                        opacity: 0,
+                        animation: 'fadeInUp 0.28s ease-out 0.3s both',
+                      }}
+                    >
+                      <span style={{ opacity: 0.65 }}>Meaning&nbsp;&nbsp;</span>My name is ___
                     </p>
-                    <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.65)' }}>
-                      <span className="mr-1">Sabihin mo:</span><span className="font-medium">Ako si ___</span>
+                    <p
+                      style={{
+                        fontSize: '0.9rem',
+                        color: 'rgba(255,255,255,0.85)',
+                        opacity: 0,
+                        animation: 'fadeInUp 0.28s ease-out 0.6s both',
+                      }}
+                    >
+                      <span style={{ opacity: 0.85 }}>Sabihin mo&nbsp;&nbsp;</span>Ako si ___
                     </p>
                   </div>
                 )}
 
-                {/* Win 2 support lines */}
+                {/* Win 2 support — same stagger pattern */}
                 {showWin2Cards && (
-                  <div className="mt-3 space-y-1" style={{ animation: 'fadeInUp 0.4s ease-out 0.3s both' }}>
-                    <p style={{ fontSize: 13, color: '#64748b' }}>
-                      <span className="mr-1">Meaning:</span>How are you?
+                  <div className="mt-3 space-y-1">
+                    <p
+                      style={{
+                        fontSize: '0.9rem',
+                        color: 'rgba(255,255,255,1)',
+                        opacity: 0,
+                        animation: 'fadeInUp 0.28s ease-out 0.3s both',
+                      }}
+                    >
+                      <span style={{ opacity: 0.65 }}>Meaning&nbsp;&nbsp;</span>How are you?
                     </p>
-                    <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.65)' }}>
-                      <span className="mr-1">Sabihin mo:</span><span className="font-medium">Mabuti ako.</span>
+                    <p
+                      style={{
+                        fontSize: '0.9rem',
+                        color: 'rgba(255,255,255,0.85)',
+                        opacity: 0,
+                        animation: 'fadeInUp 0.28s ease-out 0.6s both',
+                      }}
+                    >
+                      <span style={{ opacity: 0.85 }}>Sabihin mo&nbsp;&nbsp;</span>Mabuti ako.
                     </p>
                   </div>
                 )}
@@ -379,7 +505,7 @@ export default function StartPage() {
 
             {/* Input area */}
             <div className="flex flex-col items-center gap-3">
-              {/* Mic button */}
+              {/* Mic button — soft glow, no pulse ring */}
               <button
                 onClick={showInput ? handleMicPress : (needsGesture ? handleGestureUnlock : undefined)}
                 disabled={isListening}
@@ -387,8 +513,10 @@ export default function StartPage() {
                 style={{
                   width: 64, height: 64,
                   background: isListening ? 'rgba(212,175,55,0.15)' : 'rgba(255,255,255,0.06)',
-                  border: `1px solid ${isListening ? 'rgba(212,175,55,0.4)' : 'rgba(255,255,255,0.08)'}`,
-                  animation: isListening ? 'listeningRing 1s ease-in-out infinite' : 'breatheGlow 5s ease-in-out infinite',
+                  border: `1px solid ${isListening ? 'rgba(212,175,55,0.5)' : 'rgba(255,255,255,0.08)'}`,
+                  animation: isListening
+                    ? 'listeningRing 1.5s ease-in-out infinite'
+                    : 'micGlow 5s ease-in-out infinite',
                 }}
                 aria-label={isListening ? 'Listening' : 'Speak'}
               >
@@ -452,7 +580,6 @@ export default function StartPage() {
         {/* ── MODE SELECTION ── */}
         {step === 'mode-select' && (
           <div className="absolute bottom-0 left-0 w-full z-10" style={{ padding: '0 24px 40px' }}>
-            {/* Transcript */}
             <div
               className="rounded-xl mb-6"
               style={{
@@ -463,7 +590,13 @@ export default function StartPage() {
                 padding: '16px',
               }}
             >
-              <p className="text-white text-[16px] leading-relaxed">{SCRIPT.transition2}</p>
+              <p
+                key={SCRIPT.transition2}
+                className="text-white text-[16px] leading-relaxed"
+                style={{ animation: 'fadeInUp 0.28s ease-out both' }}
+              >
+                {SCRIPT.transition2}
+              </p>
             </div>
 
             <div className="space-y-3">
@@ -501,7 +634,6 @@ export default function StartPage() {
         {/* ── ACCOUNT GATE ── */}
         {step === 'account-gate' && (
           <div className="flex flex-col h-full pt-16 pb-10 px-6">
-            {/* Small avatar */}
             <div className="flex justify-center mb-6">
               <div
                 className="w-20 h-20 rounded-full overflow-hidden flex-shrink-0"
