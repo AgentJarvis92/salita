@@ -1,0 +1,82 @@
+=== SALITA PRODUCTION SECURITY TESTING ===
+Test Date: Mon Feb 16 19:24:31 EST 2026
+Target: https://salita-production.up.railway.app
+
+=== 1. SECURITY HEADERS TEST ===
+Testing security headers on main page...
+HTTP/2 307 
+cache-control: private, no-cache, no-store, max-age=0, must-revalidate
+content-security-policy: default-src 'self'; script-src 'self' 'unsafe-inline' https://accounts.google.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' https://wbcfrfpndsczqtuilfsl.supabase.co https://accounts.google.com; frame-src https://accounts.google.com; object-src 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests
+content-type: text/html; charset=utf-8
+date: Tue, 17 Feb 2026 00:24:31 GMT
+link: </_next/static/media/797e433ab948586e-s.p.dbea232f.woff2>; rel=preload; as="font"; crossorigin=""; type="font/woff2", </_next/static/media/caa3a2e1cccd8315-s.p.853070df.woff2>; rel=preload; as="font"; crossorigin=""; type="font/woff2"
+location: /login
+referrer-policy: strict-origin-when-cross-origin
+server: railway-edge
+vary: rsc, next-router-state-tree, next-router-prefetch, next-router-segment-prefetch, Accept-Encoding
+x-content-type-options: nosniff
+x-frame-options: DENY
+x-powered-by: Next.js
+x-railway-edge: railway/us-east4-eqdc4a
+x-railway-request-id: VRehrJpDQr2jgxnbg4a9AQ
+x-xss-protection: 1; mode=block
+
+
+Header Analysis:
+✅ CSP: Present
+✅ X-Frame-Options: Present
+✅ X-Content-Type-Options: Present
+✅ X-XSS-Protection: Present
+✅ Referrer-Policy: Present
+
+Information Leakage Check:
+⚠️  X-Powered-By detected (info leak)
+server: railway-edge
+
+=== 2. PROTECTED ROUTE ACCESS TEST ===
+Testing unauthorized access to protected routes...
+Testing /dashboard:
+HTTP/2 307 
+content-security-policy: default-src 'self'; script-src 'self' https://accounts.google.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' https://wbcfrfpndsczqtuilfsl.supabase.co https://accounts.google.com; frame-src https://accounts.google.com; object-src 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests
+date: Tue, 17 Feb 2026 00:24:32 GMT
+location: /login
+referrer-policy: strict-origin-when-cross-origin
+❌ Dashboard may not be properly protected
+
+Testing API routes without authentication:
+HTTP/2 404 
+cache-control: private, no-cache, no-store, max-age=0, must-revalidate
+content-security-policy: default-src 'self'; script-src 'self' 'unsafe-inline' https://accounts.google.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' https://wbcfrfpndsczqtuilfsl.supabase.co https://accounts.google.com; frame-src https://accounts.google.com; object-src 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests
+content-type: text/html; charset=utf-8
+date: Tue, 17 Feb 2026 00:24:32 GMT
+⚠️  API may not require authentication
+
+=== 3. COOKIE SECURITY TEST ===
+Testing cookie security attributes...
+
+⚠️  HttpOnly flag may be missing
+⚠️  Secure flag may be missing
+⚠️  SameSite attribute may be missing
+
+=== 4. INPUT VALIDATION TEST ===
+Testing email validation (client-side observable via form behavior)
+Manual test required: Submit invalid email formats
+
+=== 5. OAUTH REDIRECT SECURITY ===
+Testing Google OAuth redirect...
+⚠️  OAuth redirect URL may not match production
+
+=== 6. HTTPS ENFORCEMENT ===
+HTTP/1.1 301 Moved Permanently
+Content-Type: text/html; charset=utf-8
+Location: https://salita-production.up.railway.app/
+Server: railway-edge
+X-Railway-Edge: railway/us-east4-eqdc4a
+✅ HTTP redirects to HTTPS
+
+=== SECURITY TEST COMPLETE ===
+Review results above and perform manual browser-based tests for:
+- XSS injection attempts in forms
+- Password strength validation
+- CSRF token validation
+- Session timeout behavior

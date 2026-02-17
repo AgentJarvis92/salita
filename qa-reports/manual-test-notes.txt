@@ -1,0 +1,17 @@
+=== MANUAL SECURITY TESTING NOTES ===
+Test Date: Mon Feb 16 19:25 EST 2026
+
+BROWSER SESSION TESTING:
+- Navigated to /auth/signup
+- Unexpectedly landed on dashboard (already authenticated)
+- User shown: "QATEST202602161922"
+- This indicates session persistence from previous testing
+
+NEXT STEPS:
+1. Inspect cookies for security attributes (httpOnly, secure, sameSite)
+2. Test logout and session clearing
+3. Test XSS injection in forms
+4. Test password strength validation
+5. Test OAuth redirect flow
+6. Test CSRF protection
+

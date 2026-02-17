@@ -36,6 +36,7 @@ function ChatPageContent() {
   const [inputValue, setInputValue] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(true);
+  const [historyLoaded, setHistoryLoaded] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const hasAutoPlayedGreeting = useRef(false);
 
@@ -64,12 +65,57 @@ function ChatPageContent() {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
+  // Hydrate chat history from DB on mount
   useEffect(() => {
-    // Send initial greeting when chat loads
-    if (messages.length === 0) {
+    async function loadHistory() {
+      try {
+        const response = await fetch('/api/messages');
+        if (!response.ok) {
+          setHistoryLoaded(true);
+          return;
+        }
+        const data = await response.json();
+        const dbMessages: Message[] = (data.messages || []).map((row: any) => {
+          if (row.role === 'user') {
+            return {
+              id: row.id,
+              role: 'user' as const,
+              content: row.english || row.tagalog || '',
+              timestamp: new Date(row.created_at),
+            };
+          } else {
+            return {
+              id: row.id,
+              role: 'assistant' as const,
+              aiResponse: {
+                tagalog: row.tagalog || '',
+                correction: row.correction || 'None',
+                hint: row.hint || null,
+                tone: row.tone || 'warm',
+              },
+              timestamp: new Date(row.created_at),
+            };
+          }
+        });
+        if (dbMessages.length > 0) {
+          setMessages(dbMessages);
+          setShowOnboarding(false);
+        }
+      } catch (err) {
+        console.error('Failed to load chat history:', err);
+      } finally {
+        setHistoryLoaded(true);
+      }
+    }
+    loadHistory();
+  }, []);
+
+  // Send initial greeting only if no history exists
+  useEffect(() => {
+    if (historyLoaded && messages.length === 0) {
       handleSendMessage('', true);
     }
-  }, []);
+  }, [historyLoaded]);
 
   // Auto-play greeting via TTS when first AI message arrives
   useEffect(() => {

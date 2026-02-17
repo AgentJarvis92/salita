@@ -50,9 +50,16 @@ export default function DashboardPage() {
     return null;
   }
 
-  const handlePersonaSelect = (persona: string) => {
+  const handlePersonaSelect = async (persona: 'ate_maria' | 'kuya_josh') => {
     setSelectedPersona(persona);
-    router.push(`/chat?persona=${persona}`);
+    // Persist persona selection to profile
+    if (user) {
+      await supabase
+        .from('profiles')
+        .update({ selected_tutor: persona })
+        .eq('user_id', user.id);
+    }
+    router.push('/chat');
   };
 
   return (
