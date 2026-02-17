@@ -63,12 +63,8 @@ export default function LoginPage() {
     setLoading(true)
     setError('')
 
-    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL
-    if (!siteUrl) {
-      setError('Configuration error. Please contact support.')
-      setLoading(false)
-      return
-    }
+    // Temporarily hardcoded for testing - TODO: fix env var reading
+    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://salita-production.up.railway.app'
 
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
