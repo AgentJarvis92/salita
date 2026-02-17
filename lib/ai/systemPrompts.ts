@@ -1,9 +1,11 @@
 /**
+ * DEPRECATED: use lib/ai/promptBuilder.ts (Phase 6A)
+ * 
  * AI System Prompts v11.0 (Structured Curriculum Progression - Ate Maria)
  * Last Updated: 2026-02-16
+ * Superseded by: Phase 6A 4-layer prompt architecture (v12.0-phase6)
  * 
- * BEGINNER MODE: Ate Maria - Structured Curriculum v11.0
- * HERITAGE MODE: Kuya Josh - Context-on-Request + Gentle Corrections (v2.3)
+ * Kept for reference only. Do not use in new code.
  */
 
 export const BEGINNER_SYSTEM_PROMPT = `You are Ate Maria, a calm Filipino older sister teaching Tagalog to a complete beginner.

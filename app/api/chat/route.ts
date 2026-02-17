@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import OpenAI from 'openai'
-import { BEGINNER_SYSTEM_PROMPT, HERITAGE_SYSTEM_PROMPT } from '@/lib/ai/systemPrompts'
+import { buildSystemPrompt, getSkillMode, type Persona } from '@/lib/ai/promptBuilder'
 import { createClient } from '@/lib/supabase-server'
 
 const openai = new OpenAI({
@@ -30,30 +30,46 @@ function checkRateLimit(userId: string): { allowed: boolean; remaining: number; 
   return { allowed: true, remaining: RATE_LIMIT - userLimit.count, resetTime: Math.floor(userLimit.resetTime / 1000) }
 }
 
+// Phase 6C: New strict JSON output contract
 interface AIResponse {
   tagalog: string
-  correction: string
-  hint: string | null
-  tone: string
+  sabihin: string | null
+  meaning: string | null
+  correction: string | null
+  examples: string[] | null
+  note: string | null
 }
 
-function validateResponse(data: any, persona: string): boolean {
-  const baseValid = (
-    data &&
-    typeof data.tagalog === 'string' &&
-    data.tagalog.length > 0 &&
-    typeof data.correction === 'string' &&
-    typeof data.tone === 'string' &&
-    (data.tone === 'warm' || data.tone === 'casual')
-  )
+function validateResponse(data: unknown): data is AIResponse {
+  if (!data || typeof data !== 'object') return false
+  const d = data as Record<string, unknown>
 
-  // Heritage mode: hint must be null
-  if (persona === 'kuya_josh') {
-    return baseValid && data.hint === null
+  // tagalog: required non-empty string
+  if (typeof d.tagalog !== 'string' || d.tagalog.trim().length === 0) return false
+
+  // sabihin: string or null
+  if (d.sabihin !== null && typeof d.sabihin !== 'string') return false
+
+  // meaning: string or null
+  if (d.meaning !== null && typeof d.meaning !== 'string') return false
+
+  // correction: string or null — reject "None" string
+  if (d.correction !== null && typeof d.correction !== 'string') return false
+  if (d.correction === 'None' || d.correction === '') {
+    // Normalize "None" / empty to null
+    d.correction = null
   }
 
-  // Beginner mode: hint must be string or null (allow null when no hint needed)
-  return baseValid && (data.hint === null || typeof data.hint === 'string')
+  // examples: string[] or null
+  if (d.examples !== null) {
+    if (!Array.isArray(d.examples)) return false
+    if (!d.examples.every((e: unknown) => typeof e === 'string')) return false
+  }
+
+  // note: string or null
+  if (d.note !== null && typeof d.note !== 'string') return false
+
+  return true
 }
 
 export async function POST(request: Request) {
@@ -61,7 +77,7 @@ export async function POST(request: Request) {
     // 🔒 AUTH CHECK - Prevent unauthorized API access
     const supabase = await createClient()
     const { data: { user }, error: authError } = await supabase.auth.getUser()
-    
+
     if (authError || !user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
@@ -89,37 +105,39 @@ export async function POST(request: Request) {
       )
     }
 
-    // Select system prompt based on persona (mode)
-    const systemPrompt = persona === 'kuya_josh' 
-      ? HERITAGE_SYSTEM_PROMPT 
-      : BEGINNER_SYSTEM_PROMPT
+    // Phase 6A: Build system prompt from 4-layer architecture
+    const validPersona = (persona === 'ate_maria' || persona === 'kuya_josh') ? persona as Persona : 'ate_maria'
+    const mode = getSkillMode(validPersona)
+    const systemPrompt = buildSystemPrompt(validPersona)
+
+    // Phase 6A: Server log
+    console.log(`[SALITA] tutor: ${validPersona} | mode: ${mode} | prompt_length: ${systemPrompt.length} chars`)
 
     // For initial greeting (empty message)
-    const userMessage = message || (persona === 'kuya_josh' 
-      ? 'Kumusta' 
+    const userMessage = message || (validPersona === 'kuya_josh'
+      ? 'Kumusta'
       : 'Hello, I want to learn Tagalog')
 
-    // Build conversation history with context
-    const messages: any[] = [{ role: 'system', content: systemPrompt }]
-    
-    // Add conversation history if provided (for state awareness)
+    // Build conversation messages with sliding window
+    const messages: { role: 'system' | 'user' | 'assistant'; content: string }[] = [
+      { role: 'system', content: systemPrompt }
+    ]
+
     // 🪟 SLIDING WINDOW - Last 15 messages only to prevent token overflow
     if (conversationHistory && Array.isArray(conversationHistory) && conversationHistory.length > 0) {
       const recentHistory = conversationHistory.slice(-15)
-      recentHistory.forEach((msg: any) => {
-        if (msg.role === 'user') {
+      recentHistory.forEach((msg: { role: string; content?: string; aiResponse?: AIResponse }) => {
+        if (msg.role === 'user' && msg.content) {
           messages.push({ role: 'user', content: msg.content })
         } else if (msg.role === 'assistant' && msg.aiResponse) {
-          // Reconstruct assistant response for context
-          messages.push({ 
-            role: 'assistant', 
-            content: JSON.stringify(msg.aiResponse) 
+          messages.push({
+            role: 'assistant',
+            content: JSON.stringify(msg.aiResponse)
           })
         }
       })
     }
-    
-    // Add current user message
+
     messages.push({ role: 'user', content: userMessage })
 
     let attempts = 0
@@ -132,22 +150,21 @@ export async function POST(request: Request) {
           messages,
           response_format: { type: 'json_object' },
           temperature: 0.7,
-          max_tokens: 300,
+          max_tokens: 400,
         })
 
         const responseText = completion.choices[0].message.content || '{}'
-        const responseData: AIResponse = JSON.parse(responseText)
+        const responseData = JSON.parse(responseText)
 
-        // Validate response
-        if (validateResponse(responseData, persona)) {
-          // 💾 PERSIST CONVERSATION - Save user message and AI response
+        if (validateResponse(responseData)) {
+          // Phase 6C: DB mapping — sabihin→hint, drop tone, meaning/examples/note ephemeral
           try {
             // Save user message
             await supabase.from('messages').insert({
               user_id: user.id,
               role: 'user',
-              persona: persona,
-              tagalog: userMessage.match(/[a-zA-Z]/) ? null : userMessage,
+              persona: validPersona,
+              tagalog: userMessage.match(/^[^a-zA-Z]*$/) ? userMessage : null,
               english: userMessage.match(/[a-zA-Z]/) ? userMessage : null,
             })
 
@@ -155,11 +172,11 @@ export async function POST(request: Request) {
             await supabase.from('messages').insert({
               user_id: user.id,
               role: 'assistant',
-              persona: persona,
+              persona: validPersona,
               tagalog: responseData.tagalog,
-              hint: responseData.hint,
-              correction: responseData.correction !== 'None' ? responseData.correction : null,
-              tone: responseData.tone,
+              hint: responseData.sabihin || null,       // sabihin → hint column
+              correction: responseData.correction || null,
+              tone: mode,                                // store mode as tone (no schema change)
             })
           } catch (dbError) {
             console.error('Failed to persist messages:', dbError)
@@ -183,7 +200,7 @@ export async function POST(request: Request) {
             throw new Error('AI response validation failed after 3 attempts')
           }
         }
-      } catch (error: any) {
+      } catch (error: unknown) {
         console.error(`Attempt ${attempts + 1} failed:`, error)
         attempts++
         if (attempts >= maxAttempts) {
@@ -193,14 +210,13 @@ export async function POST(request: Request) {
     }
 
     // Fallback response if all attempts fail
+    const fallbackResponse: AIResponse = validPersona === 'kuya_josh'
+      ? { tagalog: 'Sandali lang, nagkaka-problema ako ngayon.', sabihin: null, meaning: null, correction: null, examples: null, note: null }
+      : { tagalog: 'Sandali lang, may problema ako. Subukan ulit tayo.', sabihin: 'Sige', meaning: 'Okay / Go ahead', correction: null, examples: null, note: null }
+
     return NextResponse.json({
       success: true,
-      response: {
-        tagalog: 'Sandali lang, nagkaka-problema ako ngayon.',
-        correction: 'None',
-        hint: persona === 'kuya_josh' ? null : "Give me a moment, having trouble. Try saying: 'Sige' or 'Okay'",
-        tone: persona === 'kuya_josh' ? 'casual' : 'warm',
-      },
+      response: fallbackResponse,
     }, {
       headers: {
         'X-RateLimit-Limit': String(RATE_LIMIT),
@@ -208,10 +224,11 @@ export async function POST(request: Request) {
         'X-RateLimit-Reset': String(rateLimit.resetTime),
       },
     })
-  } catch (error: any) {
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Internal server error'
     console.error('Chat API error:', error)
     return NextResponse.json(
-      { error: error.message || 'Internal server error' },
+      { error: message },
       { status: 500 }
     )
   }

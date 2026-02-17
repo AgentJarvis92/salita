@@ -8,8 +8,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase'
-import { cookies } from 'next/headers'
+import { createClient } from '@/lib/supabase-server'
 import { openai } from '@/lib/openai'
 
 export const runtime = 'nodejs'
@@ -19,8 +18,7 @@ const MAX_TEXT_LENGTH = 4096
 export async function POST(request: NextRequest) {
   try {
     // Auth guard — require valid session
-    const cookieStore = await cookies()
-    const supabase = createClient(cookieStore)
+    const supabase = await createClient()
     const { data: { user }, error: authError } = await supabase.auth.getUser()
     if (authError || !user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })

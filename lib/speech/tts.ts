@@ -11,6 +11,12 @@ export interface TTSOptions {
   speed?: number
 }
 
+// Phase 7A: Character voice mapping
+// Ate Maria → nova (warm alto), Kuya Josh → onyx (calm mid-range male)
+export function getVoiceForPersona(persona: string): 'nova' | 'onyx' {
+  return persona === 'kuya_josh' ? 'onyx' : 'nova'
+}
+
 let currentAudio: HTMLAudioElement | null = null
 let currentUrl: string | null = null
 

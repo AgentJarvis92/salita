@@ -9,13 +9,16 @@ import { ensureProfile } from '@/lib/ensure-profile';
 import MicButton from '@/components/voice/MicButton';
 import VoiceToggle from '@/components/voice/VoiceToggle';
 import ChatBubble from '@/components/chat/ChatBubble';
-import { synthesizeAndPlay } from '@/lib/speech/tts';
+import { synthesizeAndPlay, getVoiceForPersona } from '@/lib/speech/tts';
 
+// Phase 6C: New output contract schema
 interface AIResponse {
   tagalog: string;
-  correction: string;
-  hint: string | null;
-  tone: string;
+  sabihin: string | null;
+  meaning: string | null;
+  correction: string | null;
+  examples: string[] | null;
+  note: string | null;
 }
 
 interface Message {
@@ -109,9 +112,11 @@ function ChatPageContent() {
               role: 'assistant' as const,
               aiResponse: {
                 tagalog: row.tagalog || '',
-                correction: row.correction || 'None',
-                hint: row.hint || null,
-                tone: row.tone || 'warm',
+                sabihin: row.hint || null,     // hint column → sabihin
+                meaning: null,                  // not stored, ephemeral
+                correction: row.correction || null,
+                examples: null,
+                note: null,
               },
               timestamp: new Date(row.created_at),
             };
@@ -147,7 +152,8 @@ function ChatPageContent() {
       messages[0].aiResponse?.tagalog
     ) {
       hasAutoPlayedGreeting.current = true;
-      synthesizeAndPlay(messages[0].aiResponse.tagalog).catch(() => {
+      // Phase 7A: Use character-specific voice
+      synthesizeAndPlay(messages[0].aiResponse.tagalog, { voice: getVoiceForPersona(persona) }).catch(() => {
         // Silently fail - autoplay may be blocked
       });
     }
@@ -208,8 +214,9 @@ function ChatPageContent() {
       setMessages((prev) => [...prev, aiMessage]);
 
       // Auto-play new AI messages if voice is enabled
+      // Phase 7A: Use character-specific voice
       if (voiceEnabled && data.response?.tagalog) {
-        synthesizeAndPlay(data.response.tagalog).catch(() => {});
+        synthesizeAndPlay(data.response.tagalog, { voice: getVoiceForPersona(persona) }).catch(() => {});
       }
     } catch (error) {
       console.error('Error sending message:', error);
@@ -218,9 +225,11 @@ function ChatPageContent() {
         role: 'assistant',
         aiResponse: {
           tagalog: 'Sandali lang, may problema ako.',
-          correction: 'None',
-          hint: persona === 'kuya_josh' ? null : "Give me a moment, having trouble. Try saying: 'Sige' or 'Okay'",
-          tone: persona === 'kuya_josh' ? 'casual' : 'warm',
+          sabihin: persona === 'kuya_josh' ? null : 'Sige',
+          meaning: persona === 'kuya_josh' ? null : 'Okay / Go ahead',
+          correction: null,
+          examples: null,
+          note: null,
         },
         timestamp: new Date(),
       };
