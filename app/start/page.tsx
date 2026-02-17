@@ -10,7 +10,6 @@
 
 import { useState, useRef, useEffect, useCallback } from 'react'
 import { createClient, AnamEvent } from '@anam-ai/js-sdk'
-import type AnamClient from '@anam-ai/js-sdk/dist/main/AnamClient'
 import { supabase } from '@/lib/supabase'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
@@ -68,7 +67,7 @@ export default function StartPage() {
   const [signupError, setSignupError]       = useState('')
   const [signupLoading, setSignupLoading]   = useState(false)
 
-  const anamRef      = useRef<AnamClient | null>(null)
+  const anamRef      = useRef<ReturnType<typeof createClient> | null>(null)
   const cancelledRef = useRef(false)
   const flowStarted  = useRef(false)
   const inputRef     = useRef<HTMLInputElement>(null)
