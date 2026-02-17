@@ -63,13 +63,15 @@ export default function LoginPage() {
     setLoading(true)
     setError('')
 
-    // Temporarily hardcoded for testing - TODO: fix env var reading
-    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://salita-production.up.railway.app'
+    // CRITICAL: Use ONLY window.location.origin - no env vars, no hardcoded URLs
+    const redirectTo = new URL('/auth/callback', window.location.origin).toString()
+    console.log('[OAuth Debug] Origin:', window.location.origin)
+    console.log('[OAuth Debug] Redirect URL:', redirectTo)
 
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: `${siteUrl}/auth/callback`,
+        redirectTo,
       },
     })
 
