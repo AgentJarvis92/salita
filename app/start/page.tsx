@@ -191,25 +191,33 @@ export default function StartPage() {
   // ─── FLOW START ───────────────────────────────────────────────────────────
 
   useEffect(() => {
+    if (step !== 'init') return
+    
     const startOnboarding = async () => {
-      if (step !== 'init') return
+      try {
+        await sleep(300)
+        await speak(SPEECH.greeting)
+        if (cancelRef.current) return
+        setSubtitle(SPEECH.greeting)
+        await sleep(1200 + Math.random() * 600)
 
-      await sleep(300)
-      await speak(SPEECH.greeting)
-      if (cancelRef.current) return
-      setSubtitle(SPEECH.greeting)
-      await sleep(1200 + Math.random() * 600)
-
-      if (cancelRef.current) return
-      await speak(SPEECH.askName)
-      if (cancelRef.current) return
-      setSubtitle(SPEECH.askName)
-      setStep('ask-name')
-      startAssistTimer(ASSIST.name)
+        if (cancelRef.current) return
+        await speak(SPEECH.askName)
+        if (cancelRef.current) return
+        setSubtitle(SPEECH.askName)
+        setStep('ask-name')
+        startAssistTimer(ASSIST.name)
+      } catch (err) {
+        console.error('[ONBOARDING]', err)
+        // Fallback: still transition to ask-name even if TTS fails
+        setSubtitle(SPEECH.askName)
+        setStep('ask-name')
+        startAssistTimer(ASSIST.name)
+      }
     }
 
     startOnboarding()
-  }, [speak, startAssistTimer])
+  }, [step, speak, startAssistTimer])
 
   // ─── SIGNUP ───────────────────────────────────────────────────────────────
 
