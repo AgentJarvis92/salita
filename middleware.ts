@@ -59,9 +59,22 @@ export async function middleware(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser()
 
+  // Allow public routes
+  const publicRoutes = ['/start', '/login', '/']
+  const isPublic = publicRoutes.some(route => request.nextUrl.pathname === route || request.nextUrl.pathname.startsWith(route + '/'))
+
+  // Allow guest TTS for onboarding
+  if (request.nextUrl.pathname === '/api/speech/synthesize' && request.method === 'POST') {
+    const body = await request.json().catch(() => ({}))
+    if (body.isGuest === true) {
+      // Allow guest TTS requests
+      return response
+    }
+  }
+
   // Protected routes - redirect to login if not authenticated
-  if (!user && (request.nextUrl.pathname.startsWith('/chat') || 
-                 request.nextUrl.pathname.startsWith('/dashboard'))) {
+  if (!user && !isPublic && (request.nextUrl.pathname.startsWith('/chat') || 
+                              request.nextUrl.pathname.startsWith('/dashboard'))) {
     return NextResponse.redirect(new URL('/login', request.url))
   }
 

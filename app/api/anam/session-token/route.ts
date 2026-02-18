@@ -33,6 +33,7 @@ export async function POST(request: NextRequest) {
         personaConfig: {
           name: 'Ate Maria',
           avatarId: ANAM_AVATAR_ID,
+          voiceId: 'd79f2051-3a89-4fcc-8c71-cf5d53f9d9e0', // Lauren - Empathetic and Encouraging
           llmId: ANAM_LLM_ID,
           // System prompt prevents LLM from responding to accidental user input
           // All speech is driven by talk() with locked script
